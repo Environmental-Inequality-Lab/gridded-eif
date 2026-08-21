@@ -24,6 +24,15 @@ Versioning: [SemVer](https://semver.org/spec/v2.0.0.html).
   to a wildcard past 50 objects, which is billed as a single path.
 
 ### Added
+- `state` and `nation` geography levels. Nation is declared as a `constant`
+  source — every cell maps to one id — which keeps a single aggregation path
+  instead of adding a second one that sums state partitions. Both give the same
+  answer, since after nearest-polygon snapping every populated cell belongs to
+  exactly one state.
+- Cross-level consistency tests: nation, state, and county totals must agree.
+  Each level is built independently from the same grid cells, so a cell dropped
+  by one crosswalk but kept by another surfaces here, where a single-level test
+  would see nothing wrong.
 ### Added
 - Pipeline: fetch, contract validation, crosswalk, aggregation, catalog, publish.
 - `catalog/variables.yaml` as the single declarative registry.

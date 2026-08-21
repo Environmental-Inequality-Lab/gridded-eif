@@ -63,6 +63,9 @@ class Geography:
     tiger_url_pattern: str | None
     built_from: str | None
     derived_from: str | None
+    source: str | None
+    constant_id: str | None
+    constant_name: str | None
 
 
 @cache
@@ -119,6 +122,9 @@ def geographies(max_phase: int | None = None) -> dict[str, Geography]:
             tiger_url_pattern=spec.get("tiger_url_pattern"),
             built_from=spec.get("built_from"),
             derived_from=spec.get("derived_from"),
+            source=spec.get("source"),
+            constant_id=spec.get("constant_id"),
+            constant_name=spec.get("constant_name"),
         )
     return out
 

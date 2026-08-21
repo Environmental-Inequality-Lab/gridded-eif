@@ -194,7 +194,10 @@ geographies:
   nation:
     label: Nation
     phase: 1
-    derived_from: state
+    source: constant
+    constant_id: US
+    constant_name: United States
+    approx_units: 1
 
   state:
     label: State

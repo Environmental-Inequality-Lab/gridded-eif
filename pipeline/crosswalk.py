@@ -48,6 +48,21 @@ def build(
     cells = _distinct_cells(reference_dataset, reference_year)
     console.print(f"crosswalk {geography}: {len(cells):,} grid cells")
 
+    if geo.source == "constant":
+        # No spatial work: every cell belongs to the single unit by definition.
+        result = pd.DataFrame({
+            "grid_lon": cells.grid_lon.values,
+            "grid_lat": cells.grid_lat.values,
+            "geo_id": geo.constant_id,
+            "snapped": False,
+        })
+        result.to_parquet(out, index=False, compression="zstd")
+        console.print(
+            f"[green]crosswalk {geography}: {len(result):,} cells -> "
+            f"{geo.constant_id}[/green]"
+        )
+        return out
+
     shapes = _load_boundaries(geo)
     console.print(f"crosswalk {geography}: {len(shapes):,} polygons")
 
@@ -108,6 +123,8 @@ def build(
 def names(geography: str) -> pd.DataFrame:
     """Geography id to display name lookup, for the UI's place picker."""
     geo = config.geographies()[geography]
+    if geo.source == "constant":
+        return pd.DataFrame({"geo_id": [geo.constant_id], "name": [geo.constant_name]})
     shapes = _load_boundaries(geo)
     return pd.DataFrame({
         "geo_id": shapes["_geo_id"].values,

@@ -21,7 +21,7 @@ the numbers they always returned.
 Initial build. Source data version 5.0 (Census).
 
 ### Added
-- `ageracesex` and `raceincome` at county level, 2018–2024.
+- `ageracesex` and `raceincome` at county, state, and nation level, 2000–2024.
 - Both noise measures (`n_noise`, `n_noise_postprocessed`) in every partition.
 
 ### Known characteristics

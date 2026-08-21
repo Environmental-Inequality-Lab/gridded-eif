@@ -8,6 +8,8 @@ Marked `network` because they read the built artifacts; skipped when absent.
 """
 
 
+from pathlib import Path
+
 import duckdb
 import pytest
 
@@ -102,3 +104,46 @@ def test_alaska_and_hawaii_are_present(county_2022):
             f"SELECT sum(n_noise) FROM t WHERE substr(geo_id,1,2) = '{fips}'"
         ).fetchone()[0]
         assert pop and pop > 100_000, f"{name} missing or implausibly small: {pop}"
+
+
+@pytest.fixture(scope="module")
+def all_levels() -> dict[str, Path]:
+    """Built partitions for every geography level available locally."""
+    found = {}
+    for level in ("nation", "state", "county"):
+        path = config.REPO_ROOT / ".build" / config.derived_key("ageracesex", level, 2022)
+        if path.exists():
+            found[level] = path
+    if len(found) < 2:
+        pytest.skip("need at least two geography levels built for 2022")
+    return found
+
+
+def test_totals_agree_across_geography_levels(all_levels):
+    """Aggregating to a coarser geography must not create or lose people.
+
+    Every level is built independently from the same grid cells, so agreement is
+    a genuine end-to-end check on the crosswalks: a cell dropped by one level's
+    spatial join but kept by another would show up here as a mismatch, where a
+    single-level test would see nothing wrong.
+    """
+    con = duckdb.connect()
+    totals = {
+        level: con.execute(
+            f"SELECT round(sum(n_noise)) FROM read_parquet('{path.as_posix()}')"
+        ).fetchone()[0]
+        for level, path in all_levels.items()
+    }
+    distinct = set(totals.values())
+    assert len(distinct) == 1, f"levels disagree: {totals}"
+    assert distinct.pop() == EXPECTED_TOTAL
+
+
+def test_geography_unit_counts_are_plausible(all_levels):
+    con = duckdb.connect()
+    expected = {"nation": 1, "state": 51, "county": 3144}  # 51 = 50 states + DC
+    for level, path in all_levels.items():
+        n = con.execute(
+            f"SELECT count(DISTINCT geo_id) FROM read_parquet('{path.as_posix()}')"
+        ).fetchone()[0]
+        assert n == expected[level], f"{level}: {n} units, expected {expected[level]}"
