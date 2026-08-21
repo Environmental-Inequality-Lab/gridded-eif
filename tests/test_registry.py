@@ -1,0 +1,95 @@
+"""Registry and contract consistency.
+
+These run without network access. They guard the invariant that the registry is
+the single source of truth: if these fail, config and contract have drifted
+apart and the pipeline will build something nobody intended.
+"""
+
+from pipeline import config
+
+
+def test_registry_loads():
+    reg = config.registry()
+    assert reg["registry_version"]
+    assert reg["grid"]["crs"] == "EPSG:4326"
+
+
+def test_enabled_datasets_are_the_two_population_files():
+    assert set(config.datasets()) == {"ageracesex", "raceincome"}
+
+
+def test_every_dataset_dimension_is_defined():
+    dims = config.registry()["dimensions"]
+    for ds in config.datasets().values():
+        for d in ds.dimensions:
+            assert d in dims, f"{ds.name} references undefined dimension {d!r}"
+
+
+def test_registry_categories_match_the_contract():
+    """The registry drives the UI; the contract validates the source. If they
+    disagree, the site would offer a filter the data cannot satisfy."""
+    contract = config.contract()["datasets"]
+    for name, ds in config.datasets().items():
+        for dim in ds.dimensions:
+            declared = {v["code"] for v in config.registry()["dimensions"][dim]["values"]}
+            expected = set(contract[name]["categories"][dim])
+            assert declared == expected, f"{name}.{dim}: registry {declared} != contract {expected}"
+
+
+def test_exactly_one_default_measure():
+    assert config.default_measure() == "n_noise_postprocessed"
+
+
+def test_derived_paths_are_version_prefixed():
+    """Published URLs get cited. A MAJOR bump must write beside the old tree,
+    never over it."""
+    key = config.derived_key("ageracesex", "county", 2022)
+    assert key.startswith("derived/v1/")
+    assert key == "derived/v1/ageracesex/county/2022/part-00.parquet"
+
+
+def test_block_group_is_not_offered():
+    """A 0.01 degree cell is about the size of a median block group, so that
+    level would imply precision the privacy noise cannot support."""
+    assert "block_group" not in config.registry()["geographies"]
+    assert "blockgroup" not in config.registry()["geographies"]
+
+
+def test_population_datasets_are_marked_non_joinable():
+    """No age-by-income cross exists; the UI relies on this to make an
+    impossible query structurally unreachable."""
+    ri = config.registry()["datasets"]["raceincome"]
+    assert "ageracesex" in ri["not_joinable_with"]
+
+
+def test_age_labels_are_verbatim():
+    """We reproduce '19-65' exactly as published rather than inventing a
+    corrected label, because the correct one is unconfirmed."""
+    age = config.registry()["dimensions"]["age_group"]
+    assert age["verbatim_from_source"] is True
+    assert {v["code"] for v in age["values"]} >= {"Under 18", "19-65", "Over 65"}
+    assert age["footnote"]
+
+
+def test_catalog_merge_preserves_partitions_built_elsewhere():
+    """A CI runner starts with an empty build directory, so a job that rebuilds
+    one year knows about only that year. Without merging, publishing would
+    replace a catalog describing every year with one describing a single year —
+    the Parquet would remain in S3 but the site, which reads only the catalog,
+    would stop seeing it.
+    """
+    from pipeline.catalog import _merge_entries
+
+    published = [
+        {"dataset": "ageracesex", "geography": "county", "year": 2021, "rows": 1},
+        {"dataset": "ageracesex", "geography": "county", "year": 2022, "rows": 1},
+    ]
+    rebuilt = [
+        {"dataset": "ageracesex", "geography": "county", "year": 2022, "rows": 999},
+        {"dataset": "ageracesex", "geography": "county", "year": 2023, "rows": 1},
+    ]
+    merged = _merge_entries(published, rebuilt)
+
+    assert [e["year"] for e in merged] == [2021, 2022, 2023], "2021 must survive the rebuild"
+    by_year = {e["year"]: e for e in merged}
+    assert by_year[2022]["rows"] == 999, "a rebuilt partition must win over the published one"

@@ -1,0 +1,135 @@
+name: Refresh data
+
+# The annual path. Runs on demand, or on a schedule that checks whether Census
+# has published a new year. Publishing uses GitHub OIDC — no long-lived AWS keys
+# are stored anywhere.
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: "Year to build"
+        required: true
+        type: string
+      geography:
+        description: "Comma-separated geography levels"
+        required: false
+        default: "county"
+        type: string
+      publish:
+        description: "Upload to S3 after building"
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    # Census published the 2024 files in July. Check quarterly.
+    - cron: "0 9 1 1,4,7,10 *"
+
+permissions:
+  id-token: write      # required for OIDC
+  contents: read
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GEIF_BASE_URL: ${{ vars.GEIF_BASE_URL }}
+      GEIF_BUCKET: ${{ vars.GEIF_BUCKET }}
+      GEIF_DISTRIBUTION_ID: ${{ vars.GEIF_DISTRIBUTION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e .
+
+      # TIGER/Line shapefiles are ~85 MB per level and change roughly annually.
+      # The runner is ephemeral, so without this every run re-downloads them.
+      - name: Cache TIGER boundaries
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: tiger-2024-${{ inputs.geography }}
+          restore-keys: tiger-2024-
+
+      # Validation runs BEFORE anything is built. If Census changed the schema,
+      # this fails loudly here rather than producing quietly wrong numbers.
+      - name: Validate source against contract
+        run: |
+          for ds in ageracesex raceincome; do
+            geif validate-source --dataset "$ds" --year "${{ inputs.year }}"
+          done
+
+      - name: Build
+        run: |
+          geif build \
+            --geography "${{ inputs.geography }}" \
+            --year "${{ inputs.year }}"
+
+      - name: Regenerate catalog
+        run: geif catalog --base-url "$GEIF_BASE_URL"
+
+      # Prints the identity this job presents to AWS. STS's denial message
+      # never says WHICH condition failed, so without this an auth failure is
+      # pure guesswork. The token itself is a credential and is never printed —
+      # only the sub/aud claims, which are just repo and ref identifiers.
+      - name: Show OIDC identity
+        if: ${{ inputs.publish }}
+        run: |
+          TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
+          python3 - "$TOKEN" <<'PY'
+          import base64, json, sys
+          payload = sys.argv[1].split('.')[1]
+          payload += '=' * (-len(payload) % 4)
+          claims = json.loads(base64.urlsafe_b64decode(payload))
+          print("sub       :", claims.get("sub"))
+          print("aud       :", claims.get("aud"))
+          print("repository:", claims.get("repository"))
+          print("ref       :", claims.get("ref"))
+          print()
+          print("The role trust policy must match sub exactly (case-sensitive).")
+          PY
+
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ inputs.publish }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # A Secret, not a Variable: it embeds the AWS account ID, and
+          # workflow logs are public on a public repo. Secrets are masked.
+          role-to-assume: ${{ secrets.GEIF_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Publish
+        if: ${{ inputs.publish }}
+        run: |
+          geif publish \
+            --bucket "$GEIF_BUCKET" \
+            --distribution-id "$GEIF_DISTRIBUTION_ID"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Data refresh — ${{ inputs.year }}"
+            echo ''
+            echo '```'
+            python -c "
+          import json, pathlib
+          c = json.loads(pathlib.Path('.build/catalog.json').read_text())
+          print('pipeline', c['pipeline_version'], '| registry', c['registry_version'])
+          for e in c['entries']:
+              flag = ' [preliminary]' if e['preliminary'] else ''
+              print(f\"{e['dataset']:<12} {e['geography']:<8} {e['year']}  \"
+                    f\"{e['rows']:>9,} rows  {e['bytes']/1e6:>6.1f} MB{flag}\")
+          "
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,263 @@
+# =============================================================================
+# Gridded EIF — variable & dataset registry
+# =============================================================================
+# SINGLE SOURCE OF TRUTH. The pipeline, the docs generator, and the web UI all
+# read this file. Adding a year, a dataset, or a geography level should mean
+# editing THIS FILE ONLY — never a component or a pipeline module.
+#
+# If exposing new data requires a code change, that is a bug.
+# =============================================================================
+
+registry_version: 1.0.0
+
+source:
+  base_url: https://www2.census.gov/ces/gridded_eif/
+  citation: >-
+    Voorheis, J., Colmer, J., Houghton, K., Lyubich, E., Munro, M., Scalera, C.,
+    and Withrow, J. (2025). "The Public-Use Gridded Environmental Impacts Frame."
+  landing_page: https://www.census.gov/data/experimental-data-products/gridded-eif.html
+  data_version: "5.0"          # Census's own version of the Gridded EIF
+  experimental: true
+
+grid:
+  resolution_deg: 0.01
+  crs: EPSG:4326               # per eif_grid_topology.rda, the only CRS shipped with the data
+  centroid_offset: 0.005       # cell edges land on exact 0.01 multiples
+  key_columns: [grid_lon, grid_lat]
+  key_dtype: string            # deliberately string — float equality breaks joins
+  coverage: [CONUS, AK, HI]    # NOT territories: no PR, VI, GU, AS, MP
+
+# -----------------------------------------------------------------------------
+# Measures — the two noise treatments. Present in every population dataset.
+# -----------------------------------------------------------------------------
+measures:
+  n_noise:
+    label: Raw
+    description: >-
+      Direct output of the noise-infusion process. Unbiased, but can be negative
+      (8.3% of grid-cell rows in 2022, min -8).
+    recommended_when: aggregate population above 600,000
+    non_negative: false
+  n_noise_postprocessed:
+    label: Post-processed
+    description: >-
+      Small noisy cells pooled by race within each 1-degree grid point and
+      redistributed, residual negatives clamped to zero. Always non-negative.
+    recommended_when: aggregate population below 600,000
+    non_negative: true
+    default: true
+
+# Threshold that selects the default measure. From the user guide §7.3.1.
+measure_selection_population_threshold: 600000
+
+# -----------------------------------------------------------------------------
+# Dimensions — shared category definitions
+# -----------------------------------------------------------------------------
+dimensions:
+
+  race_ethnicity:
+    label: Race and ethnicity
+    note: Hispanic takes precedence; all other categories are non-Hispanic.
+    values:
+      - {code: White,          label: "White"}
+      - {code: Black,          label: "Black"}
+      - {code: Hispanic,       label: "Hispanic"}
+      - {code: Asian,          label: "Asian"}
+      - {code: AIAN,           label: "American Indian & Alaska Native"}
+      - {code: "Other/Unknown", label: "Other or unknown", residual: true}
+
+  age_group:
+    label: Age group
+    # Labels are reproduced EXACTLY as they ship. "19-65" leaves 18-year-olds
+    # unaccounted for, while the working paper says "18-64". Unresolved with
+    # the authors, so we do not invent a corrected label.
+    verbatim_from_source: true
+    footnote: >-
+      Age categories are reproduced exactly as published. The published labels
+      leave the placement of 18-year-olds ambiguous; we have not altered them.
+    values:
+      - {code: "Under 18",    label: "Under 18"}
+      - {code: "19-65",       label: "19-65"}
+      - {code: "Over 65",     label: "Over 65"}
+      - {code: "Missing Age", label: "Age not reported", residual: true}
+
+  sex:
+    label: Sex
+    values:
+      - {code: "M",              label: "Male"}
+      - {code: "F",              label: "Female"}
+      - {code: "Missing Gender", label: "Not reported", residual: true}
+
+  income_decile:
+    label: Household income decile
+    dtype: int
+    note: >-
+      Equal-count national deciles of household AGI, recomputed each year.
+      A decile count is a distributional profile, not an income measure.
+    footnote: >-
+      Decile 0 is documented as non-filers but holds only ~321,000 people
+      nationally in 2022, while deciles 1-10 already partition the full
+      population into exact tenths. Its meaning is unconfirmed.
+    values:
+      - {code: 0,  label: "Decile 0 (unconfirmed)", residual: true}
+      - {code: 1,  label: "1st (lowest)"}
+      - {code: 2,  label: "2nd"}
+      - {code: 3,  label: "3rd"}
+      - {code: 4,  label: "4th"}
+      - {code: 5,  label: "5th"}
+      - {code: 6,  label: "6th"}
+      - {code: 7,  label: "7th"}
+      - {code: 8,  label: "8th"}
+      - {code: 9,  label: "9th"}
+      - {code: 10, label: "10th (highest)"}
+
+# -----------------------------------------------------------------------------
+# Datasets
+# -----------------------------------------------------------------------------
+datasets:
+
+  ageracesex:
+    label: Population by age, race, and sex
+    enabled: true
+    file_pattern: "gridded_eif_pop_ageracesex_{year}.parquet"
+    preliminary_file_pattern: "gridded_eif_pop_ageracesex_{year}_realtime.parquet"
+    years: {start: 1999, end: 2024}
+    preliminary_years: [2025]
+    dimensions: [race_ethnicity, age_group, sex]
+    unit: people
+
+  raceincome:
+    label: Population by race and income decile
+    enabled: true
+    file_pattern: "gridded_eif_pop_raceincome_{year}.parquet"
+    preliminary_file_pattern: "gridded_eif_pop_raceincome_{year}_realtime.parquet"
+    years: {start: 1999, end: 2024}
+    preliminary_years: [2025]
+    dimensions: [race_ethnicity, income_decile]
+    unit: people
+    # The two population datasets cannot be crossed on demographics — they are
+    # separate tabulations joinable only on grid cell. The UI must make choosing
+    # a dataset the FIRST step so an impossible query is unreachable.
+    not_joinable_with: [ageracesex]
+
+  # --- Deferred. Present so adding them later is a config change, not code. ---
+
+  pollutants:
+    label: Air pollution exposure
+    enabled: false
+    file_pattern: "gridded_eif_pollutants_{year}.parquet"
+    years: {start: 1999, end: 2023}
+    kind: continuous
+    note: >-
+      Source coverage is staggered — SEDAC ends 2016, CACES 2020, ACAG 2022.
+      Each variable must declare its own year range.
+
+  extreme_weather:
+    label: Extreme weather exposure
+    enabled: false
+    file_pattern: "gridded_extreme_weather_{year}.parquet"
+    kind: continuous
+
+  homevalue:
+    label: Housing units by home value
+    enabled: false
+    file_pattern: "gridded_eif_hu_age_homeval_{year}.parquet"
+    years: {start: 2024, end: 2024}
+    unit: households
+
+# -----------------------------------------------------------------------------
+# Geography levels
+# -----------------------------------------------------------------------------
+# Generic over TIGER/Line: adding a level is a block here plus a shapefile URL.
+# Deliberately NO block group — a 0.01 degree cell is about the size of a median
+# block group, so that level implies precision the noise cannot support.
+# -----------------------------------------------------------------------------
+geographies:
+
+  nation:
+    label: Nation
+    phase: 1
+    derived_from: state
+
+  state:
+    label: State
+    phase: 1
+    tiger_url: https://www2.census.gov/geo/tiger/TIGER2024/STATE/tl_2024_us_state.zip
+    id_field: GEOID
+    name_field: NAME
+    approx_units: 51
+
+  county:
+    label: County
+    phase: 1
+    tiger_url: https://www2.census.gov/geo/tiger/TIGER2024/COUNTY/tl_2024_us_county.zip
+    id_field: GEOID
+    name_field: NAME
+    approx_units: 3144
+
+  cbsa:
+    label: Metro / micropolitan area
+    phase: 2
+    tiger_url: https://www2.census.gov/geo/tiger/TIGER2024/CBSA/tl_2024_us_cbsa.zip
+    id_field: GEOID
+    name_field: NAME
+    approx_units: 939
+
+  puma:
+    label: PUMA
+    phase: 2
+    tiger_url: https://www2.census.gov/geo/tiger/TIGER2024/PUMA/tl_2024_us_puma20.zip
+    id_field: GEOID20
+    name_field: NAMELSAD20
+    approx_units: 2400
+
+  czone:
+    label: Commuting zone
+    phase: 2
+    source: crosswalk          # not TIGER — built from the county-to-CZ crosswalk
+    built_from: county
+    approx_units: 741
+
+  zcta:
+    label: ZIP Code Tabulation Area
+    phase: 3
+    tiger_url: https://www2.census.gov/geo/tiger/TIGER2024/ZCTA520/tl_2024_us_zcta520.zip
+    id_field: GEOID20
+    name_field: GEOID20
+    approx_units: 33000
+    caveat: >-
+      ZCTAs approximate postal delivery routes, not neighborhoods or any
+      administrative unit. High demand, weak conceptual fit.
+
+  tract:
+    label: Census tract
+    phase: 3
+    tiger_url_pattern: https://www2.census.gov/geo/tiger/TIGER2024/TRACT/tl_2024_{state_fips}_tract.zip
+    per_state: true
+    id_field: GEOID
+    name_field: NAMELSAD
+    approx_units: 85000
+    caveat: The practical floor. Below this, privacy noise dominates.
+
+  cd:
+    label: Congressional district
+    phase: 4
+    tiger_url: https://www2.census.gov/geo/tiger/TIGER2024/CD119/tl_2024_us_cd119.zip
+    id_field: GEOID
+    name_field: NAMELSAD
+    approx_units: 435
+    caveat: Districts are redrawn; the boundary vintage matters for comparisons.
+
+# -----------------------------------------------------------------------------
+# Aggregation rules — documented publicly at /docs
+# -----------------------------------------------------------------------------
+aggregation:
+  method: point_in_polygon_centroid
+  snap_unmatched_to_nearest: true
+  snap_max_distance_m: 25000        # metres, measured in EPSG:5070 (not degrees)
+  # Verified 2022: 222 of 2,611,734 cells (14,214 people) fall outside every
+  # county polygon. They are a systematic US-Mexico border artifact concentrated
+  # in Calexico, El Paso, and Laredo — cells straddling the border whose centroid
+  # lands in Mexico. Dropping them would undercount border communities.
+  residual_categories_visible: true
+  mix_measures: false          # never combine raw and post-processed in one table

@@ -1,0 +1,97 @@
+# ---------------------------------------------------------------------------
+# Secrets / infrastructure identifiers
+# ---------------------------------------------------------------------------
+# Internal notes — kept locally, never published.
+#
+# AWS_SETUP.md holds the real account ID, distribution ID, and role ARN.
+# PLAN.md holds design notes, unvetted findings, and commentary on upstream
+# documentation that has not been shared with its authors.
+# GEIF_Userguide.pdf is an unreleased upstream document, not ours to publish.
+# docs/ mirrors internal notes.
+AWS_SETUP.md
+PLAN.md
+GEIF_Userguide.pdf
+docs/
+.env
+.env.*
+!.env.example
+*.pem
+credentials
+.aws/
+
+# ---------------------------------------------------------------------------
+# Data — never in git. It lives in S3; the catalog points at it.
+# ---------------------------------------------------------------------------
+*.parquet
+*.rda
+*.RData
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.gpkg
+*.pmtiles
+*.mbtiles
+raw/
+staged/
+derived/
+tiles/
+crosswalks/
+counties/
+data/
+
+# Pipeline working directories — build outputs and cached downloads.
+# .build/ holds derived Parquet + the build ledger; it is reproducible from
+# source and belongs in S3, not git. .cache/ holds TIGER shapefiles.
+.build/
+.cache/
+
+# Large archives
+*.zip
+*.tar.gz
+*.7z
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.ipynb_checkpoints/
+
+# DuckDB scratch
+*.duckdb
+*.duckdb.wal
+*.db
+
+# ---------------------------------------------------------------------------
+# Node / frontend
+# ---------------------------------------------------------------------------
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+.eslintcache
+
+# ---------------------------------------------------------------------------
+# Editors / OS
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# ---------------------------------------------------------------------------
+# Scratch
+# ---------------------------------------------------------------------------
+scratch/
+tmp/
+prototype/*.parquet

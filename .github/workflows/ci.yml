@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check pipeline tests
+      - name: Tests
+        run: pytest -q
+
+  # Guards against the failure mode this project is most exposed to: Census
+  # silently changing the source schema between releases. Runs weekly against
+  # the live files so drift is caught before a refresh, not during one.
+  contract:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Validate live source against pinned contract
+        run: |
+          for ds in ageracesex raceincome; do
+            geif validate-source --dataset "$ds" --year 2022
+          done

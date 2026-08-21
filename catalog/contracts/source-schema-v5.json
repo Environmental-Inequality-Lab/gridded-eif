@@ -1,0 +1,88 @@
+{
+  "contract_version": "1.0.0",
+  "describes_data_version": "5.0",
+  "derived_from": "empirical inspection of the 2022 source files, 2026-08-21",
+  "note": "The user guide's prose tables are correct; every code example in it is stale (pm25_grid_x, race_fact_simp, noisy_n_postproc). Build against this contract, not the guide. CI must fail loudly on drift.",
+
+  "datasets": {
+    "ageracesex": {
+      "columns": [
+        {"name": "grid_lon",              "type": "VARCHAR"},
+        {"name": "grid_lat",              "type": "VARCHAR"},
+        {"name": "age_group",             "type": "VARCHAR"},
+        {"name": "race_ethnicity",        "type": "VARCHAR"},
+        {"name": "sex",                   "type": "VARCHAR"},
+        {"name": "n_noise",               "type": "DOUBLE"},
+        {"name": "n_noise_postprocessed", "type": "DOUBLE"}
+      ],
+      "categories": {
+        "race_ethnicity": ["AIAN", "Asian", "Black", "Hispanic", "White", "Other/Unknown"],
+        "age_group":      ["Under 18", "19-65", "Over 65", "Missing Age"],
+        "sex":            ["M", "F", "Missing Gender"]
+      },
+      "expected_rows_min": 15000000,
+      "expected_rows_max": 30000000
+    },
+
+    "raceincome": {
+      "columns": [
+        {"name": "grid_lon",              "type": "VARCHAR"},
+        {"name": "grid_lat",              "type": "VARCHAR"},
+        {"name": "income_decile",         "type": "DOUBLE"},
+        {"name": "race_ethnicity",        "type": "VARCHAR"},
+        {"name": "n_noise",               "type": "DOUBLE"},
+        {"name": "n_noise_postprocessed", "type": "DOUBLE"}
+      ],
+      "categories": {
+        "race_ethnicity": ["AIAN", "Asian", "Black", "Hispanic", "White", "Other/Unknown"],
+        "income_decile":  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      },
+      "expected_rows_min": 15000000,
+      "expected_rows_max": 30000000
+    }
+  },
+
+  "grid": {
+    "crs": "EPSG:4326",
+    "resolution_deg": 0.01,
+    "key_dtype": "string",
+    "centroid_decimals": 3,
+    "centroid_ends_in_5": true,
+    "bbox": {"min_lon": -177.0, "max_lon": -66.0, "min_lat": 18.0, "max_lat": 72.0},
+    "expected_cells_min": 2000000,
+    "expected_cells_max": 3500000
+  },
+
+  "invariants": [
+    {
+      "id": "postprocessing_preserves_race_totals",
+      "description": "Post-processing redistributes within race groups, so national race totals must agree between the two measures.",
+      "tolerance_abs": 1000,
+      "verified_2022": "White 181,814,741 raw vs 181,814,692 post-processed (diff 49)"
+    },
+    {
+      "id": "national_total_plausible",
+      "description": "Administrative-records coverage runs ~96% of true US population.",
+      "min": 250000000,
+      "max": 360000000,
+      "verified_2022": 319931068
+    },
+    {
+      "id": "postprocessed_non_negative",
+      "description": "n_noise_postprocessed must never be negative.",
+      "verified_2022": "0 negative rows"
+    },
+    {
+      "id": "raw_may_be_negative",
+      "description": "n_noise is expected to contain negatives; this is not an error.",
+      "verified_2022": "1,715,714 of 20,780,507 rows (8.3%), min -8"
+    }
+  ],
+
+  "known_quirks": [
+    "Missing objects behind CloudFront OAC return 403, not 404 (no s3:ListBucket).",
+    "S3 guesses Content-Type application/x-www-form-urlencoded for .parquet; set it explicitly on upload.",
+    "eif_grid_topology.rda is CONUS-only (lon -132..-65, lat 25..55) and omits AK/HI. Never use it as the grid definition.",
+    "Post-processing inflates the Over 65 count by ~1.5% nationally (~800k people) and more than doubles Missing Gender cells. Not documented upstream."
+  ]
+}

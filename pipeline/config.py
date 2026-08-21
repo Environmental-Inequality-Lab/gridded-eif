@@ -1,0 +1,149 @@
+"""Loads the declarative registry and schema contract.
+
+Everything the pipeline knows about datasets, dimensions, and geographies comes
+from ``catalog/variables.yaml``. Nothing here hardcodes a dataset name, a
+category value, or a year range — adding data must be a config change.
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from functools import cache
+from pathlib import Path
+
+import yaml
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+CATALOG_DIR = REPO_ROOT / "catalog"
+REGISTRY_PATH = CATALOG_DIR / "variables.yaml"
+
+# Version prefix for derived data. Bumping this writes a NEW tree alongside the
+# old one so previously published URLs keep resolving.
+DERIVED_VERSION = "v1"
+
+
+@dataclass(frozen=True)
+class Dataset:
+    name: str
+    label: str
+    enabled: bool
+    file_pattern: str
+    dimensions: tuple[str, ...]
+    years: tuple[int, ...]
+    preliminary_years: tuple[int, ...]
+    preliminary_file_pattern: str | None
+    unit: str
+
+    def all_years(self) -> tuple[int, ...]:
+        return tuple(sorted(set(self.years) | set(self.preliminary_years)))
+
+    def is_preliminary(self, year: int) -> bool:
+        return year in self.preliminary_years
+
+    def filename(self, year: int) -> str:
+        if self.is_preliminary(year):
+            if not self.preliminary_file_pattern:
+                raise ValueError(f"{self.name} has no preliminary file pattern for {year}")
+            return self.preliminary_file_pattern.format(year=year)
+        return self.file_pattern.format(year=year)
+
+
+@dataclass(frozen=True)
+class Geography:
+    name: str
+    label: str
+    phase: int
+    id_field: str | None
+    name_field: str | None
+    tiger_url: str | None
+    per_state: bool
+    tiger_url_pattern: str | None
+    built_from: str | None
+    derived_from: str | None
+
+
+@cache
+def registry() -> dict:
+    with REGISTRY_PATH.open() as fh:
+        return yaml.safe_load(fh)
+
+
+@cache
+def contract() -> dict:
+    version = registry()["source"]["data_version"].split(".")[0]
+    path = CATALOG_DIR / "contracts" / f"source-schema-v{version}.json"
+    with path.open() as fh:
+        return json.load(fh)
+
+
+@cache
+def datasets(enabled_only: bool = True) -> dict[str, Dataset]:
+    out: dict[str, Dataset] = {}
+    for name, spec in registry()["datasets"].items():
+        if enabled_only and not spec.get("enabled", False):
+            continue
+        years_spec = spec.get("years", {})
+        years = tuple(range(years_spec["start"], years_spec["end"] + 1)) if years_spec else ()
+        out[name] = Dataset(
+            name=name,
+            label=spec["label"],
+            enabled=spec.get("enabled", False),
+            file_pattern=spec["file_pattern"],
+            dimensions=tuple(spec.get("dimensions", [])),
+            years=years,
+            preliminary_years=tuple(spec.get("preliminary_years", [])),
+            preliminary_file_pattern=spec.get("preliminary_file_pattern"),
+            unit=spec.get("unit", "people"),
+        )
+    return out
+
+
+@cache
+def geographies(max_phase: int | None = None) -> dict[str, Geography]:
+    out: dict[str, Geography] = {}
+    for name, spec in registry()["geographies"].items():
+        if max_phase is not None and spec.get("phase", 99) > max_phase:
+            continue
+        out[name] = Geography(
+            name=name,
+            label=spec["label"],
+            phase=spec.get("phase", 99),
+            id_field=spec.get("id_field"),
+            name_field=spec.get("name_field"),
+            tiger_url=spec.get("tiger_url"),
+            per_state=spec.get("per_state", False),
+            tiger_url_pattern=spec.get("tiger_url_pattern"),
+            built_from=spec.get("built_from"),
+            derived_from=spec.get("derived_from"),
+        )
+    return out
+
+
+def measures() -> dict[str, dict]:
+    return registry()["measures"]
+
+
+def measure_columns() -> list[str]:
+    return list(registry()["measures"].keys())
+
+
+def default_measure() -> str:
+    for name, spec in registry()["measures"].items():
+        if spec.get("default"):
+            return name
+    raise ValueError("no default measure declared in the registry")
+
+
+def source_url(dataset: str, year: int) -> str:
+    base = registry()["source"]["base_url"].rstrip("/")
+    return f"{base}/{datasets()[dataset].filename(year)}"
+
+
+def derived_key(dataset: str, geography: str, year: int, part: str = "part-00") -> str:
+    """S3 key for a derived partition.
+
+    Every axis is a path segment so adding a year, geography, or dataset writes
+    new leaves and never rewrites an existing file.
+    """
+    return f"derived/{DERIVED_VERSION}/{dataset}/{geography}/{year}/{part}.parquet"
