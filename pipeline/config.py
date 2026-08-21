@@ -140,6 +140,57 @@ def source_url(dataset: str, year: int) -> str:
     return f"{base}/{datasets()[dataset].filename(year)}"
 
 
+def parse_years(spec: str, dataset: str | None = None) -> list[int]:
+    """Parse a year specification into a sorted list.
+
+    Accepts single years, inclusive ranges, and comma-separated combinations:
+
+        "2022"              -> [2022]
+        "1999-2024"         -> [1999, 2000, ..., 2024]
+        "2018,2020-2022"    -> [2018, 2020, 2021, 2022]
+        "all"               -> every year the dataset declares, preliminary included
+
+    Years outside the dataset's declared range are rejected rather than silently
+    dropped — a typo in a backfill should fail loudly, not quietly build less
+    than asked.
+    """
+    available = set(datasets()[dataset].all_years()) if dataset else None
+
+    if spec.strip().lower() == "all":
+        if available is None:
+            raise ValueError("'all' requires a dataset")
+        return sorted(available)
+
+    years: set[int] = set()
+    for chunk in spec.split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        if "-" in chunk:
+            start, _, end = chunk.partition("-")
+            try:
+                lo, hi = int(start), int(end)
+            except ValueError:
+                raise ValueError(f"bad year range {chunk!r}; expected e.g. 1999-2024") from None
+            if lo > hi:
+                raise ValueError(f"range {chunk!r} runs backwards")
+            years.update(range(lo, hi + 1))
+        else:
+            try:
+                years.add(int(chunk))
+            except ValueError:
+                raise ValueError(f"bad year {chunk!r}") from None
+
+    if available is not None:
+        unknown = years - available
+        if unknown:
+            raise ValueError(
+                f"{dataset} has no data for {sorted(unknown)}; "
+                f"available: {min(available)}-{max(available)}"
+            )
+    return sorted(years)
+
+
 def derived_key(dataset: str, geography: str, year: int, part: str = "part-00") -> str:
     """S3 key for a derived partition.
 

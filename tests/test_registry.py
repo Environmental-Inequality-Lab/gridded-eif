@@ -93,3 +93,28 @@ def test_catalog_merge_preserves_partitions_built_elsewhere():
     assert [e["year"] for e in merged] == [2021, 2022, 2023], "2021 must survive the rebuild"
     by_year = {e["year"]: e for e in merged}
     assert by_year[2022]["rows"] == 999, "a rebuilt partition must win over the published one"
+
+
+def test_parse_years_accepts_ranges_and_lists():
+    from pipeline.config import parse_years
+
+    assert parse_years("2022", "ageracesex") == [2022]
+    assert parse_years("2018-2020", "ageracesex") == [2018, 2019, 2020]
+    assert parse_years("2018,2020-2022", "ageracesex") == [2018, 2020, 2021, 2022]
+    assert parse_years(" 2019 , 2021 ", "ageracesex") == [2019, 2021]
+    assert parse_years("all", "ageracesex")[0] == 1999
+
+
+def test_parse_years_rejects_unavailable_years():
+    """A typo in a backfill must fail immediately, not quietly build less than
+    was asked for and leave a gap nobody notices."""
+    import pytest
+
+    from pipeline.config import parse_years
+
+    with pytest.raises(ValueError, match="no data for"):
+        parse_years("1990-1995", "ageracesex")
+    with pytest.raises(ValueError, match="runs backwards"):
+        parse_years("2022-2018", "ageracesex")
+    with pytest.raises(ValueError, match="bad year"):
+        parse_years("twenty-twenty", "ageracesex")

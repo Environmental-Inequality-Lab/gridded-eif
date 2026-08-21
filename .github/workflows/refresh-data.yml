@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       year:
-        description: "Year to build"
+        description: "Year, range, or list — 2022 | 1999-2024 | 2018,2020-2022 | all"
         required: true
         type: string
       geography:
@@ -36,7 +36,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 300
     env:
       GEIF_BASE_URL: ${{ vars.GEIF_BASE_URL }}
       GEIF_BUCKET: ${{ vars.GEIF_BUCKET }}
@@ -61,14 +61,9 @@ jobs:
           key: tiger-2024-${{ inputs.geography }}
           restore-keys: tiger-2024-
 
-      # Validation runs BEFORE anything is built. If Census changed the schema,
-      # this fails loudly here rather than producing quietly wrong numbers.
-      - name: Validate source against contract
-        run: |
-          for ds in ageracesex raceincome; do
-            geif validate-source --dataset "$ds" --year "${{ inputs.year }}"
-          done
-
+      # `geif build` validates each source file against the pinned contract
+      # before aggregating it, and resolves the whole year plan up front so a
+      # bad range fails immediately rather than mid-backfill.
       - name: Build
         run: |
           geif build \

@@ -76,19 +76,42 @@ def build_crosswalk(
 
 @app.command()
 def build(
-    geography: str = typer.Option("county", "--geography"),
-    year: int = typer.Option(..., "--year"),
+    geography: str = typer.Option("county", "--geography", help="Comma-separated levels"),
+    year: str = typer.Option(
+        ...,
+        "--year",
+        help="Year, range, or list: 2022 | 1999-2024 | 2018,2020-2022 | all",
+    ),
     dataset: str = typer.Option(None, "--dataset", help="Default: all enabled datasets"),
     skip_validation: bool = typer.Option(False, "--skip-validation"),
     force: bool = typer.Option(False, "--force"),
 ) -> None:
-    """Aggregate one year to a geography level."""
-    xw = crosswalk.build(geography)
+    """Aggregate one or more years to one or more geography levels."""
     names = dataset.split(",") if dataset else list(config.datasets())
-    for name in names:
+    levels = [g.strip() for g in geography.split(",") if g.strip()]
+
+    # Resolve every year up front so a typo fails before any work is done,
+    # rather than twenty minutes into a backfill.
+    plan: list[tuple[str, str, int]] = []
+    for level in levels:
+        for name in names:
+            for y in config.parse_years(year, name):
+                plan.append((name, level, y))
+
+    if len(plan) > 1:
+        console.print(
+            f"[bold]{len(plan)} partitions[/bold]: {', '.join(levels)} × "
+            f"{', '.join(names)} × {len(config.parse_years(year, names[0]))} years"
+        )
+
+    crosswalks = {level: crosswalk.build(level) for level in levels}
+
+    for i, (name, level, y) in enumerate(plan, 1):
+        prefix = f"[dim][{i}/{len(plan)}][/dim] " if len(plan) > 1 else ""
+        console.print(f"{prefix}", end="")
         if not skip_validation:
-            validate.validate_source(name, year).raise_if_failed()
-        aggregate.build(name, geography, year, xw, force=force)
+            validate.validate_source(name, y).raise_if_failed()
+        aggregate.build(name, level, y, crosswalks[level], force=force)
 
 
 @app.command()
@@ -133,16 +156,28 @@ def publish(
 
 @app.command()
 def refresh(
-    year: int = typer.Option(..., "--year"),
+    year: str = typer.Option(..., "--year", help="Year, range, or list. See `build`."),
     geography: str = typer.Option("county", "--geography"),
     base_url: str = typer.Option(..., "--base-url", envvar="GEIF_BASE_URL"),
     bucket: str = typer.Option(None, "--bucket", envvar="GEIF_BUCKET"),
     distribution_id: str = typer.Option(None, "--distribution-id", envvar="GEIF_DISTRIBUTION_ID"),
+    skip_validation: bool = typer.Option(False, "--skip-validation"),
 ) -> None:
-    """The annual path: validate, build, catalog, publish — one command."""
-    for geo in geography.split(","):
-        build(geography=geo, year=year, dataset=None, skip_validation=False, force=False)
-    catalog(base_url=base_url)
+    """The annual path: validate, build, catalog, publish — one command.
+
+    Catalog and publish run once at the end. If a year fails mid-run nothing is
+    published, so the CDN never serves a half-finished refresh; re-run the
+    failing subrange and the catalog merge folds it in alongside what is already
+    live.
+    """
+    build(
+        geography=geography,
+        year=year,
+        dataset=None,
+        skip_validation=skip_validation,
+        force=False,
+    )
+    catalog(base_url=base_url, merge_published=True)
     if bucket:
         publish(bucket=bucket, distribution_id=distribution_id, dry_run=False)
 

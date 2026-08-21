@@ -57,6 +57,13 @@ geif validate-source --dataset ageracesex --year 2022
 geif build --geography county --year 2022
 ```
 
+`--year` takes a single year, an inclusive range, a comma-separated list, or
+`all` — so a full backfill is one command:
+
+```bash
+geif build --geography county --year 1999-2024
+```
+
 ```bash
 geif catalog --base-url https://YOUR_DISTRIBUTION.cloudfront.net
 ```
@@ -66,6 +73,11 @@ The annual refresh is one command:
 ```bash
 geif refresh --year 2025 --geography county,state
 ```
+
+The whole plan resolves up front, so a bad year fails immediately rather than
+twenty minutes into a backfill. Catalog and publish run once at the end: if a
+year fails nothing is published, and re-running the failing subrange folds it in
+alongside what is already live.
 
 ## Layout
 
@@ -80,7 +92,7 @@ geif refresh --year 2025 --geography county,state
 **Adding a dataset, year, or geography should mean editing `variables.yaml` only.**
 If it requires touching a pipeline module or a UI component, that's a bug.
 
-## Two things that will bite you
+## Two notes
 
 **Two noise measures, not one.** `n_noise` is unbiased but can be negative (8.3%
 of grid rows in 2022). `n_noise_postprocessed` is non-negative but redistributes
