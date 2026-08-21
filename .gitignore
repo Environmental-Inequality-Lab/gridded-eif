@@ -105,6 +105,7 @@ prototype/*.parquet
 # (Note: '#' only starts a comment at the START of a line in .gitignore.)
 site/catalog.json
 site/catalog-*.json
+site/_names/
 
 # Editor/agent tooling — local, and settings files here can carry machine
 # paths and permissions. How to run the site locally is documented in README

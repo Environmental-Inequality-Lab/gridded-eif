@@ -144,6 +144,24 @@ def combine(
 
 
 @app.command()
+def names(
+    geography: str = typer.Option(None, "--geography", help="Default: every level built"),
+    force: bool = typer.Option(False, "--force"),
+) -> None:
+    """Build geo_id -> display-name lookups so places are searchable by name."""
+    if geography:
+        levels = [g.strip() for g in geography.split(",")]
+    else:
+        led = BUILD_DIR / "_ledger"
+        levels = sorted({p.parent.name for p in led.rglob("*.json") if p.parent.name != "_combined"})
+    for level in levels:
+        src = crosswalk.build_names(level, force=force)
+        dest = BUILD_DIR / config.names_key(level)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(src.read_text())
+
+
+@app.command()
 def catalog(
     base_url: str = typer.Option(..., "--base-url", envvar="GEIF_BASE_URL"),
     merge_published: bool = typer.Option(
@@ -215,6 +233,7 @@ def refresh(
         skip_validation=skip_validation,
         force=False,
     )
+    names(geography=geography)
     combine(geography=geography, dataset=None, base_url=base_url)
     catalog(base_url=base_url, merge_published=True)
     if bucket:

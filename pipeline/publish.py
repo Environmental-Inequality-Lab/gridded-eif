@@ -51,10 +51,12 @@ def publish(
         if not path.is_file() or "_ledger" in path.parts:
             continue
         key = path.relative_to(build_dir).as_posix()
-        is_catalog = path.name == CATALOG_FILENAME
+        # Parquet at a versioned path never changes. The catalog and the name
+        # lookups can be rewritten in place, so they get a short TTL.
+        mutable = path.name == CATALOG_FILENAME or "_names" in path.parts
         extra = {
             "ContentType": CONTENT_TYPES.get(path.suffix, "application/octet-stream"),
-            "CacheControl": SHORT if is_catalog else IMMUTABLE,
+            "CacheControl": SHORT if mutable else IMMUTABLE,
         }
         if dry_run:
             console.print(f"[dim]would upload {key} ({path.stat().st_size / 1e6:.1f} MB)[/dim]")

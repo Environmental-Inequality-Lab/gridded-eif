@@ -42,15 +42,28 @@ export function warmUp() {
  */
 let tail = Promise.resolve();
 
+const shape = (result) =>
+  result.toArray().map((row) => {
+    const o = {};
+    for (const [k, v] of Object.entries(row)) o[k] = typeof v === 'bigint' ? Number(v) : v;
+    return o;
+  });
+
 export function query(sql) {
   const run = tail.then(async () => {
     const conn = await warmUp();
-    const result = await conn.query(sql);
-    return result.toArray().map((row) => {
-      const o = {};
-      for (const [k, v] of Object.entries(row)) o[k] = typeof v === 'bigint' ? Number(v) : v;
-      return o;
-    });
+    try {
+      return shape(await conn.query(sql));
+    } catch (e) {
+      // A first request for a large file can fail while CloudFront is fetching
+      // it from the origin — the edge has nothing cached and the range request
+      // stalls. Observed on the 29 MB all-years county file. One retry after a
+      // short pause is enough, and is far better than showing the user an error
+      // for a file that is simply warming up.
+      if (!/network|failed to (load|fetch|execute)/i.test(String(e.message || e))) throw e;
+      await new Promise((r) => setTimeout(r, 900));
+      return shape(await conn.query(sql));
+    }
   });
   // Keep the chain alive even when a query rejects, or one failure would
   // permanently wedge every later query behind it.

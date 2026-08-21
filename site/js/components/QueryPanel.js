@@ -23,8 +23,9 @@ export function QueryPanel({ cat, state, go, toggleFacet, places, measure, measu
           </select>
           ${ds?.not_joinable_with?.length > 0 && html`
             <p class="small muted" style="margin:.4rem 0 0">
-              Separate tabulations of the same population. They share grid cells,
-              not demographics — there is no age-by-income cross.
+              The two datasets are separate tabulations of the same population.
+              They can be linked on grid cell but not on demographic categories;
+              no age-by-income cross-tabulation exists.
             </p>`}
         </div>
 
@@ -46,7 +47,9 @@ export function QueryPanel({ cat, state, go, toggleFacet, places, measure, measu
             <select id="place" value=${state.p || ''}
                     onChange=${(e) => go({ p: e.target.value || null })}>
               <option value="">All ${geos.find((g) => g.id === state.g)?.label || ''}</option>
-              ${(places || []).map((p) => html`<option value=${p.geo_id}>${p.name}</option>`)}
+              ${(places || [])
+                .filter((p) => p.level === state.g)
+                .map((p) => html`<option value=${p.geo_id}>${p.name}</option>`)}
             </select>
           </div>`}
 
@@ -91,14 +94,25 @@ export function QueryPanel({ cat, state, go, toggleFacet, places, measure, measu
             ${Object.entries(cat.measures).map(([id, m]) => html`
               <option value=${id}>${m.label}</option>`)}
           </select>
-          <p class="small muted" style="margin:.4rem 0 0">
+          <div class="small muted" style="margin:.5rem 0 0">
+            <p style="margin:0 0 .5rem">${cat.measures[measure]?.description}</p>
+            <p style="margin:0 0 .5rem">
+              Recommended when ${cat.measures[measure]?.recommended_when}. The two
+              versions differ most for small geographies and for sparse categories —
+              notably the oldest age group and the residual "not reported" categories,
+              where the adjustment shifts a visible share of the total. They are
+              different estimators of the same quantity and should not be combined in
+              a single table.
+            </p>
             ${measureAuto
-              ? html`Using <strong>${cat.measures[measure].label.toLowerCase()}</strong> —
-                 recommended ${measure === 'n_noise_postprocessed' ? 'below' : 'above'}
-                 ${cat.measure_selection_population_threshold.toLocaleString()} population.`
-              : html`Manually set. <button class="btn btn-quiet btn-sm"
-                       onClick=${() => go({ m: null })}>Use the recommendation</button>`}
-          </p>
+              ? html`<p style="margin:0">${'Selected automatically at the '}
+                  ${cat.measure_selection_population_threshold.toLocaleString()}
+                  ${' population threshold.'}</p>`
+              : html`<p style="margin:0">Set manually.
+                  <button class="btn btn-quiet btn-sm" style="padding:0 .2rem"
+                          onClick=${() => go({ m: null })}>Use the recommended version</button>
+                </p>`}
+          </div>
         </div>
 
       </div>

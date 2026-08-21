@@ -158,6 +158,12 @@ def combined_key(dataset: str, geography: str) -> str:
     return f"derived/{DERIVED_VERSION}/{dataset}/{geography}/all/part-00.parquet"
 
 
+def names_key(geography: str) -> str:
+    """S3 key for a geography's id -> name lookup. Version-prefixed with the
+    rest of the derived data, since names follow a TIGER boundary vintage."""
+    return f"derived/{DERIVED_VERSION}/_names/{geography}.json"
+
+
 def parse_years(spec: str, dataset: str | None = None) -> list[int]:
     """Parse a year specification into a sorted list.
 

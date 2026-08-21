@@ -1,7 +1,7 @@
 import { html, render, useState, useEffect } from './h.js';
-import { loadCatalog } from './catalog.js';
+import { loadCatalog, loadNames, placeIndex } from './catalog.js';
 import { useUrlState } from './state.js';
-import { warmUp, query, q } from './duck.js';
+import { warmUp } from './duck.js';
 import { Header, Footer, Notice, Spinner } from './components/Chrome.js';
 import { Landing } from './components/Landing.js';
 import { Explore } from './components/Explore.js';
@@ -22,35 +22,22 @@ function App() {
   // download overlaps with them choosing what to look at rather than blocking.
   useEffect(() => { if (state.v === 'explore') warmUp().catch(() => {}); }, [state.v]);
 
-  /* Place names come from the data itself. The pipeline does not publish a
-   * separate name lookup yet, so geo_ids are labelled from a small built-in map
-   * for states and shown as codes elsewhere. Replacing this with a published
-   * lookup is a pipeline change, not a UI one. */
+  /* Names for every level, loaded once from the published lookups. Not scoped
+   * to the current selection: search has to reach a county while "state" is
+   * selected, which the previous per-level load made impossible. */
   useEffect(() => {
-    if (!cat || state.v !== 'explore') return;
+    if (!cat) return;
     let cancelled = false;
-    const entry = cat.entries.find(
-      (e) => e.dataset === state.d && e.geography === state.g
-    );
-    if (!entry) return;
-    query(`SELECT DISTINCT geo_id FROM read_parquet(${q(entry.url)}) ORDER BY 1`)
-      .then((rows) => {
-        if (cancelled) return;
-        setPlaces(rows.map((r) => ({
-          geo_id: r.geo_id,
-          name: labelFor(r.geo_id, state.g),
-          level: state.g,
-          levelLabel: cat.geographies[state.g]?.label || state.g,
-        })));
-      })
+    loadNames(cat)
+      .then((names) => { if (!cancelled) setPlaces(placeIndex(cat, names)); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [cat, state.g, state.d, state.v]);
+  }, [cat]);
 
+  const TITLES = { explore: 'Query', data: 'Data Downloads', docs: 'Documentation' };
   useEffect(() => {
-    const v = state.v;
-    document.title = v === 'home' ? SITE.name
-      : `${v[0].toUpperCase()}${v.slice(1)} · ${SITE.name}`;
+    document.title = state.v === 'home' ? SITE.name
+      : `${TITLES[state.v] || state.v} · ${SITE.name}`;
   }, [state.v]);
 
   if (err) {
@@ -86,25 +73,9 @@ function App() {
   `;
 }
 
-const STATES = {
-  '01':'Alabama','02':'Alaska','04':'Arizona','05':'Arkansas','06':'California','08':'Colorado',
-  '09':'Connecticut','10':'Delaware','11':'District of Columbia','12':'Florida','13':'Georgia',
-  '15':'Hawaii','16':'Idaho','17':'Illinois','18':'Indiana','19':'Iowa','20':'Kansas','21':'Kentucky',
-  '22':'Louisiana','23':'Maine','24':'Maryland','25':'Massachusetts','26':'Michigan','27':'Minnesota',
-  '28':'Mississippi','29':'Missouri','30':'Montana','31':'Nebraska','32':'Nevada','33':'New Hampshire',
-  '34':'New Jersey','35':'New Mexico','36':'New York','37':'North Carolina','38':'North Dakota',
-  '39':'Ohio','40':'Oklahoma','41':'Oregon','42':'Pennsylvania','44':'Rhode Island',
-  '45':'South Carolina','46':'South Dakota','47':'Tennessee','48':'Texas','49':'Utah','50':'Vermont',
-  '51':'Virginia','53':'Washington','54':'West Virginia','55':'Wisconsin','56':'Wyoming',
-};
-
-function labelFor(id, level) {
-  if (level === 'nation') return 'United States';
-  if (level === 'state') return STATES[id] || id;
-  if (level === 'county') return `${id} (${STATES[id.slice(0, 2)] || '—'})`;
-  return id;
-}
-
+/* Any unhandled failure degrades to a readable message rather than a blank
+ * page. Also catches errors thrown outside the render path, which is where a
+ * bad assumption about catalog shape tends to surface. */
 function Boundary({ children }) {
   const [crash, setCrash] = useState(null);
   useEffect(() => {

@@ -15,6 +15,7 @@ undercount border communities.
 from __future__ import annotations
 
 import io
+import json
 import zipfile
 from pathlib import Path
 
@@ -146,7 +147,7 @@ def _distinct_cells(dataset: str, year: int) -> pd.DataFrame:
     ).df()
 
 
-def _load_boundaries(geo: config.Geography) -> gpd.GeoDataFrame:
+def _load_boundaries(geo: config.Geography, keep_extra: bool = False) -> gpd.GeoDataFrame:
     """Fetch and normalize a TIGER/Line layer to _geo_id / _geo_name / geometry."""
     if geo.per_state:
         raise NotImplementedError(
@@ -165,6 +166,80 @@ def _load_boundaries(geo: config.Geography) -> gpd.GeoDataFrame:
             zf.extractall(local)
 
     shp = next(local.glob("*.shp"))
-    gdf = gpd.read_file(shp)[[geo.id_field, geo.name_field, "geometry"]]
-    gdf = gdf.rename(columns={geo.id_field: "_geo_id", geo.name_field: "_geo_name"})
+    gdf = gpd.read_file(shp)
+    cols = {geo.id_field: "_geo_id", geo.name_field: "_geo_name"}
+    if keep_extra:
+        # Fields the name builder needs but the spatial join does not.
+        for src, dst in (("NAMELSAD", "_namelsad"), ("STUSPS", "_stusps")):
+            if src in gdf.columns:
+                cols[src] = dst
+    gdf = gdf[[*cols, "geometry"]].rename(columns=cols)
     return gdf
+
+
+def build_names(geography: str, force: bool = False) -> Path:
+    """Write a geo_id -> display name lookup for one geography level.
+
+    The site needs real names to be searchable: a county picker listing "26163"
+    is unusable, and a search box cannot match "Wayne" against a FIPS code.
+    Names live in their own small file rather than being repeated in every
+    yearly partition, since they do not vary by year.
+
+    Kept under the derived version prefix because names are tied to a TIGER
+    vintage — a boundary change should publish alongside, not overwrite.
+    """
+    CACHE.mkdir(exist_ok=True)
+    out = CACHE / f"names_{geography}.json"
+    if out.exists() and not force:
+        return out
+
+    geo = config.geographies()[geography]
+    if geo.source == "constant":
+        out.write_text(json.dumps({geo.constant_id: geo.constant_name}))
+        console.print(f"[green]names {geography}: 1 entry[/green]")
+        return out
+
+    # Restrict to units that actually carry data. TIGER includes Puerto Rico,
+    # the USVI, Guam, American Samoa, and the Northern Marianas, none of which
+    # the source data covers — listing them would offer a searchable place that
+    # returns nothing.
+    with_data = None
+    xwalk = CACHE / f"xwalk_{geography}.parquet"
+    if xwalk.exists():
+        with_data = set(
+            duckdb.connect()
+            .execute(f"SELECT DISTINCT geo_id FROM read_parquet('{xwalk.as_posix()}')")
+            .df()["geo_id"]
+        )
+
+    shapes = _load_boundaries(geo, keep_extra=True)
+    if with_data is not None:
+        shapes = shapes[shapes["_geo_id"].isin(with_data)]
+    labels = {}
+    if geography == "state":
+        for _, r in shapes.iterrows():
+            labels[r["_geo_id"]] = r["_geo_name"]
+    elif geography == "county":
+        # "Wayne County, MI" — the form people actually search for. NAMELSAD
+        # carries the type ("County", "Parish", "Borough"), which matters
+        # outside the lower 48.
+        abbr = _state_abbreviations()
+        for _, r in shapes.iterrows():
+            st = abbr.get(str(r["_geo_id"])[:2], "")
+            full = r.get("_namelsad") or r["_geo_name"]
+            labels[r["_geo_id"]] = f"{full}, {st}" if st else full
+    else:
+        for _, r in shapes.iterrows():
+            labels[r["_geo_id"]] = r.get("_namelsad") or r["_geo_name"]
+
+    out.write_text(json.dumps(labels, sort_keys=True))
+    console.print(f"[green]names {geography}: {len(labels):,} entries[/green]")
+    return out
+
+
+def _state_abbreviations() -> dict[str, str]:
+    geo = config.geographies().get("state")
+    if not geo or not geo.tiger_url:
+        return {}
+    shapes = _load_boundaries(geo, keep_extra=True)
+    return dict(zip(shapes["_geo_id"], shapes.get("_stusps", shapes["_geo_name"])))

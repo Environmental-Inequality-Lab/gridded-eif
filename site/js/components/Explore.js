@@ -61,8 +61,8 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
   }, [url, seriesUrl, measure, state.p, state.g, state.d, year, JSON.stringify(state.facets)]);
 
   const placeName = useMemo(
-    () => places?.find((p) => p.geo_id === state.p)?.name,
-    [places, state.p]
+    () => places?.find((p) => p.geo_id === state.p && p.level === state.g)?.name,
+    [places, state.p, state.g]
   );
 
   const columns = useMemo(() => {
@@ -71,9 +71,11 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
   }, [groupBy]);
 
   const nameFor = useMemo(() => {
-    const m = new Map((places || []).map((p) => [p.geo_id, p.name]));
+    const m = new Map(
+      (places || []).filter((p) => p.level === state.g).map((p) => [p.geo_id, p.name])
+    );
     return (id) => m.get(id) || id;
-  }, [places]);
+  }, [places, state.g]);
 
   const display = useMemo(
     () => rows.map((r) => ({ ...r, name: r.geo_id ? nameFor(r.geo_id) : undefined })),
@@ -99,7 +101,10 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
           <h1 style="margin:0">${title}</h1>
         </div>
         ${busy ? html`<${Spinner} label="Querying…" />`
-               : ms != null && html`<span class="small muted num">${ms} ms</span>`}
+               : ms != null && html`
+                 <span class="small muted" title="Time to run the query and render the result">
+                   Query time <span class="num">${ms} ms</span>
+                 </span>`}
       </div>
 
       ${prelim && html`
@@ -156,7 +161,8 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
             </div>`}
 
           ${state.tab === 'code' && html`<${CodeTab} cat=${cat} url=${url}
-              seriesUrl=${seriesUrl} measure=${measure} state=${state} year=${year} />`}
+              seriesUrl=${seriesUrl} measure=${measure} state=${state} year=${year}
+              rows=${display} columns=${columns} series=${series} />`}
         </div>
       </div>
     </div>
@@ -166,7 +172,7 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
 /* Stable URLs plus copy-paste snippets. This is a headline feature for a
  * research audience, and it makes clear the site is a convenience layer over
  * data people can always reach directly. */
-function CodeTab({ cat, url, seriesUrl, measure, state, year }) {
+function CodeTab({ cat, url, seriesUrl, measure, state, year, rows, columns, series }) {
   const [copied, setCopied] = useState(null);
   const filters = Object.entries(state.facets)
     .filter(([, v]) => v?.length)
@@ -178,12 +184,31 @@ function CodeTab({ cat, url, seriesUrl, measure, state, year }) {
     SQL: `-- DuckDB\nSELECT geo_id, sum(${measure}) AS value\nFROM read_parquet('${url}')${whereSql}\nGROUP BY 1\nORDER BY value DESC;`,
     R: `library(arrow); library(dplyr)\n\nread_parquet("${url}") |>\n  ${where.length ? `filter(${where.map((w) => w.replace(/ = /, ' == ').replace(/ IN \(/, ' %in% c(')).join(', ')}) |>\n  ` : ''}group_by(geo_id) |>\n  summarise(value = sum(${measure}))`,
     Python: `import duckdb\n\nduckdb.sql("""\n  SELECT geo_id, sum(${measure}) AS value\n  FROM read_parquet('${url}')${whereSql}\n  GROUP BY 1\n""").df()`,
+    Stata: `* Stata 19+ reads Parquet natively.\n* For 16-18: ssc install pq, then use pq_read.\nimport parquet using "${url}", clear\n${where.length ? where.map((w) => '* keep if ' + w.replace(/ = /, ' == ')).join('\\n') + '\\n' : ''}collapse (sum) ${measure}, by(geo_id)\ngsort -${measure}`,
   };
 
   const copy = (k) => { navigator.clipboard.writeText(snippets[k]); setCopied(k); setTimeout(() => setCopied(null), 1400); };
 
   return html`
     <div class="panel-body stack" style="--gap:18px">
+      <div>
+        <h4>Download</h4>
+        <p class="small muted">The current selection, as shown in the table.</p>
+        <div class="row">
+          <button class="btn btn-primary btn-sm"
+                  onClick=${() => exportCsv(rows, columns,
+                    `gridded-eif_${state.d}_${state.g}_${year}.csv`)}>
+            Download CSV
+          </button>
+          ${series?.length > 1 && html`
+            <button class="btn btn-outline btn-sm"
+                    onClick=${() => download(`gridded-eif_${state.d}_${state.g}_series.csv`,
+                                             toCsv(series, ['year', 'value']))}>
+              Download time series CSV
+            </button>`}
+        </div>
+      </div>
+
       <div>
         <h4>Stable file URLs</h4>
         <p class="small muted">

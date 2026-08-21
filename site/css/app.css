@@ -53,11 +53,7 @@ code, .mono { font-family: var(--font-mono); font-size: .86em; }
 .site-header .wrap { display: flex; align-items: center; gap: 20px; min-height: 62px; }
 .brand { display: flex; align-items: center; gap: 12px; color: var(--header-fg); text-decoration: none; }
 .brand:hover { color: var(--header-fg); text-decoration: none; }
-.brand-mark { height: 36px; width: auto; display: block; }
-.brand-divider { width: 1px; height: 26px; background: rgba(255,255,255,.3); }
-.brand-text { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: .08em;
-              text-transform: uppercase; line-height: 1.05; }
-@media (max-width: 560px) { .brand-divider, .brand-text { display: none; } }
+.brand-mark { height: 40px; width: auto; display: block; }
 .site-nav { margin-left: auto; display: flex; gap: 4px; align-items: center; }
 .site-nav a { color: var(--header-fg); opacity: .82; padding: 7px 12px; border-radius: var(--radius-sm);
               font-size: .92rem; font-weight: 700; }

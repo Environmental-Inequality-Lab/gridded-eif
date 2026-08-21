@@ -29,7 +29,7 @@ export const BASE = (() => {
 })();
 
 export const SITE = {
-  name: 'Gridded EIF Explorer',
+  name: 'Gridded EIF Data Explorer',
   org: 'Environmental Inequality Lab',
   orgUrl: 'https://environmental-inequality-lab.org',
   repo: 'https://github.com/Environmental-Inequality-Lab/gridded-eif',

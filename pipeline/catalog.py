@@ -167,6 +167,12 @@ def build(
             for name, spec in reg["geographies"].items()
             if name in {e["geography"] for e in entries}
         },
+        # geo_id -> display name, one file per geography. Small and
+        # year-independent, so kept out of the yearly partitions.
+        "names": {
+            g: f"{base_url.rstrip('/')}/{config.names_key(g)}"
+            for g in sorted({e["geography"] for e in entries})
+        },
         "datasets": datasets,
         "aggregation": reg["aggregation"],
         # Per-year partitions: the right shape for single-year queries and bulk

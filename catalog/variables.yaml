@@ -63,7 +63,7 @@ dimensions:
       - {code: Black,          label: "Black"}
       - {code: Hispanic,       label: "Hispanic"}
       - {code: Asian,          label: "Asian"}
-      - {code: AIAN,           label: "American Indian & Alaska Native"}
+      - {code: AIAN,           label: "American Indian & Alaska Native (AIAN)"}
       - {code: "Other/Unknown", label: "Other or unknown", residual: true}
 
   age_group:
@@ -94,12 +94,8 @@ dimensions:
     note: >-
       Equal-count national deciles of household AGI, recomputed each year.
       A decile count is a distributional profile, not an income measure.
-    footnote: >-
-      Decile 0 is documented as non-filers but holds only ~321,000 people
-      nationally in 2022, while deciles 1-10 already partition the full
-      population into exact tenths. Its meaning is unconfirmed.
     values:
-      - {code: 0,  label: "Decile 0 (unconfirmed)", residual: true}
+      - {code: 0,  label: "Decile 0", residual: true}
       - {code: 1,  label: "1st (lowest)"}
       - {code: 2,  label: "2nd"}
       - {code: 3,  label: "3rd"}

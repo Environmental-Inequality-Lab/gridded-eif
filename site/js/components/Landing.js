@@ -34,26 +34,26 @@ export function Landing({ cat, go, places }) {
     { label: 'Population by race, by county', patch: { v: 'explore', d: 'ageracesex', g: 'county' } },
     { label: 'Income distribution by state', patch: { v: 'explore', d: 'raceincome', g: 'state' } },
     { label: 'National trends since 2000', patch: { v: 'explore', d: 'ageracesex', g: 'nation', tab: 'series' } },
-    { label: 'Browse all files', patch: { v: 'data' } },
+    { label: 'Download files', patch: { v: 'data' } },
   ];
 
   return html`
     <div>
       <section class="section" style="padding-top:56px">
         <div class="wrap">
-          <p class="eyebrow">Experimental Census data, made usable</p>
-          <h1 style="max-width:20ch">Gridded EIF Explorer</h1>
+          <p class="eyebrow">U.S. Census Bureau experimental data product</p>
+          <h1 style="max-width:22ch">Explore Gridded EIF Data</h1>
           <p class="lead">
-            Population by age, race, sex, and income — aggregated from a 0.01°
-            grid to the geographies you actually work with. No 70 MB downloads,
-            no spatial joins.
+            Population counts by age, race, sex, and household income, aggregated
+            from the 0.01° Gridded Environmental Impacts Frame to standard
+            geographies.
           </p>
 
           <div style="max-width:640px;margin-top:28px;position:relative">
-            <label for="q">Search a place, or a variable</label>
+            <label for="q">Search for a place</label>
             <input
               id="q" type="search" autocomplete="off"
-              placeholder="Wayne County, MI · California · population 65+"
+              placeholder="Wayne County, MI · California · United States"
               value=${term}
               onInput=${(e) => setTerm(e.target.value)}
             />
@@ -88,18 +88,17 @@ export function Landing({ cat, go, places }) {
           <div class="grid3">
             <div>
               <h3>${years.length ? `${years[0]}–${years[years.length - 1]}` : '—'}</h3>
-              <p class="small muted">Annual coverage, updated from administrative records
-              more current than ACS five-year tables.</p>
+              <p class="small muted">Annual coverage, derived from administrative records.</p>
             </div>
             <div>
               <h3>${geographies(cat).map((g) => g.label).join(' · ')}</h3>
-              <p class="small muted">Pre-aggregated. Each level is built independently
-              from the same grid cells and reconciles exactly.</p>
+              <p class="small muted">Each geography is aggregated independently from the
+              same grid cells; totals reconcile across levels.</p>
             </div>
             <div>
               <h3 class="num">${count(totalRows)}</h3>
-              <p class="small muted">Rows published, queryable directly in your browser —
-              no server, no sign-in.</p>
+              <p class="small muted">Rows published, queried in the browser directly from
+              the underlying Parquet files.</p>
             </div>
           </div>
         </div>
@@ -109,22 +108,20 @@ export function Landing({ cat, go, places }) {
         <div class="wrap">
           <div class="grid2">
             <div class="card">
-              <p class="eyebrow">Read this first</p>
-              <h3>Two measures, not one</h3>
+              <h3>Two estimate versions</h3>
               <p class="small muted">
-                Every count ships in two versions. <code>n_noise</code> is unbiased but
-                can be negative; <code>n_noise_postprocessed</code> is non-negative but
-                shifts mass between demographic categories. The right choice depends on
-                how big your geography is — this site picks a default and shows you which.
+                Each count is published in two versions, which differ in how the
+                infused noise is handled. The appropriate version depends on the size
+                of the geography being analysed. This site selects a default and
+                reports which is in use.
               </p>
             </div>
             <div class="card">
-              <p class="eyebrow">Read this too</p>
-              <h3>Privacy noise is real</h3>
+              <h3>Disclosure avoidance</h3>
               <p class="small muted">
-                Counts carry deliberate noise so individuals cannot be identified.
-                It cancels out as you aggregate, which is why this site serves
-                counties and states rather than raw grid cells.
+                Counts are protected by noise infusion to preserve confidentiality.
+                The noise averages out under aggregation, so estimates are published
+                at standard geographies rather than at the native grid resolution.
               </p>
             </div>
           </div>

@@ -86,6 +86,11 @@ jobs:
       # --base-url lets it pull years that were not rebuilt in this run straight
       # from the CDN, so a single-year refresh cannot produce a one-year
       # "all-years" file.
+      # geo_id -> display name, so places are searchable by name rather than
+      # by FIPS code. Year-independent, so built once per level.
+      - name: Build name lookups
+        run: geif names --geography "${{ inputs.geography }}"
+
       - name: Build all-years files
         run: |
           geif combine \

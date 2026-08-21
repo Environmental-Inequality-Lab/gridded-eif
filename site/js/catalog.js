@@ -78,6 +78,52 @@ export function dimension(cat, name) {
   };
 }
 
+/* Display names for every geography level, loaded once.
+ *
+ * Loaded for ALL levels rather than the currently selected one: search must
+ * find a county while the user happens to have "state" selected, and a picker
+ * listing raw FIPS codes is unusable. The files are small and year-independent.
+ */
+let namesCache = null;
+
+export async function loadNames(cat) {
+  if (namesCache) return namesCache;
+  const levels = Object.entries(cat.names || {});
+  const loaded = await Promise.all(
+    levels.map(async ([level, url]) => {
+      try {
+        const res = await fetch(url);
+        return [level, res.ok ? await res.json() : {}];
+      } catch {
+        return [level, {}];
+      }
+    })
+  );
+  namesCache = Object.fromEntries(loaded);
+  return namesCache;
+}
+
+/** Flat, searchable list across every level, coarse levels first so a search
+ *  for "Washington" surfaces the state before the counties. */
+export function placeIndex(cat, names) {
+  const order = geographies(cat).map((g) => g.id);
+  const out = [];
+  for (const level of order) {
+    const label = cat.geographies[level]?.label || level;
+    // Sorted explicitly: JavaScript reorders object keys that parse as
+    // integers, so "10001" (Delaware) would come before "01001" (Alabama,
+    // which keeps a leading zero and stays a string key). Alphabetical by
+    // name is what a picker wants regardless.
+    const entries = Object.entries(names[level] || {}).sort((a, b) =>
+      a[1].localeCompare(b[1])
+    );
+    for (const [geo_id, name] of entries) {
+      out.push({ geo_id, name, level, levelLabel: label });
+    }
+  }
+  return out;
+}
+
 export function yearsFor(cat, dataset, geography) {
   return cat.entries
     .filter((e) => e.dataset === dataset && e.geography === geography)
