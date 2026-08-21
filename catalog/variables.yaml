@@ -210,6 +210,7 @@ geographies:
     id_field: GEOID
     name_field: NAME
     approx_units: 3144
+    state_prefixed: true
 
   cbsa:
     label: Metro / micropolitan area
@@ -218,25 +219,52 @@ geographies:
     id_field: GEOID
     name_field: NAME
     approx_units: 939
+    # CBSAs cover only metropolitan and micropolitan areas — roughly 94% of
+    # grid cells fall outside one. Those cells must be DROPPED, not snapped to
+    # the nearest metro: a rural cell hundreds of kilometres from a metro does
+    # not belong to it, and snapping would invent population there.
+    complete_coverage: false
+    caveat: >-
+      Metro and micropolitan areas do not cover the entire country. Cells
+      outside any CBSA are excluded, so CBSA totals do not sum to the national
+      total.
 
   puma:
     label: PUMA
     phase: 2
-    tiger_url: https://www2.census.gov/geo/tiger/TIGER2024/PUMA/tl_2024_us_puma20.zip
+    tiger_url_pattern: https://www2.census.gov/geo/tiger/TIGER2024/PUMA20/tl_2024_{state_fips}_puma20.zip
+    per_state: true
     id_field: GEOID20
     name_field: NAMELSAD20
     approx_units: 2400
+    state_prefixed: true
 
   czone:
     label: Commuting zone
     phase: 2
-    source: crosswalk          # not TIGER — built from the county-to-CZ crosswalk
+    enabled: false
+    source: crosswalk          # not TIGER — built from a county-to-CZ crosswalk
     built_from: county
     approx_units: 741
+    # BLOCKED on a decision, not on code. Commuting zones are not a Census
+    # geography and have several published vintages (1990, 2000, 2010), which
+    # are NOT interchangeable — results are not comparable across them, and the
+    # literature this data serves is split. Picking one arbitrarily would create
+    # a reproducibility problem that looks like nothing is wrong.
+    #
+    # Once a vintage is chosen, this is cheap: CZs are unions of whole counties,
+    # so the county partitions can be summed directly with no spatial join.
+    blocked_on: >-
+      Choice of commuting-zone vintage (1990 / 2000 / 2010) and a citable
+      county-to-CZ crosswalk.
 
   zcta:
     label: ZIP Code Tabulation Area
     phase: 3
+    # ZCTAs approximate delivery routes and leave gaps over unpopulated land.
+    # Populated cells almost always fall inside one, so a short snap is
+    # reasonable, but coverage is not guaranteed complete.
+    complete_coverage: false
     tiger_url: https://www2.census.gov/geo/tiger/TIGER2024/ZCTA520/tl_2024_us_zcta520.zip
     id_field: GEOID20
     name_field: GEOID20
@@ -249,19 +277,24 @@ geographies:
     label: Census tract
     phase: 3
     tiger_url_pattern: https://www2.census.gov/geo/tiger/TIGER2024/TRACT/tl_2024_{state_fips}_tract.zip
+    # Verified: TIGER2024 publishes TRACT, PUMA20, and CD per state; CBSA and
+    # ZCTA520 are single national files.
     per_state: true
     id_field: GEOID
     name_field: NAMELSAD
     approx_units: 85000
+    state_prefixed: true
     caveat: The practical floor. Below this, privacy noise dominates.
 
   cd:
     label: Congressional district
     phase: 4
-    tiger_url: https://www2.census.gov/geo/tiger/TIGER2024/CD119/tl_2024_us_cd119.zip
-    id_field: GEOID
-    name_field: NAMELSAD
+    tiger_url_pattern: https://www2.census.gov/geo/tiger/TIGER2024/CD/tl_2024_{state_fips}_cd119.zip
+    per_state: true
+    id_field: GEOID20
+    name_field: NAMELSAD20
     approx_units: 435
+    state_prefixed: true
     caveat: Districts are redrawn; the boundary vintage matters for comparisons.
 
 # -----------------------------------------------------------------------------
@@ -269,6 +302,10 @@ geographies:
 # -----------------------------------------------------------------------------
 aggregation:
   method: point_in_polygon_centroid
+  # Snapping applies only to geographies that tile the country completely
+  # (county, state, tract, PUMA, congressional district). For those, an
+  # unmatched cell is a border artifact and must belong somewhere. For partial
+  # geographies such as CBSA it is a genuine absence and is dropped instead.
   snap_unmatched_to_nearest: true
   snap_max_distance_m: 25000        # metres, measured in EPSG:5070 (not degrees)
   # Verified 2022: 222 of 2,611,734 cells (14,214 people) fall outside every

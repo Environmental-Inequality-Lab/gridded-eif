@@ -250,3 +250,32 @@ def test_preliminary_years_are_excluded_from_the_final_range():
     for ds in config.datasets().values():
         overlap = set(ds.years) & set(ds.preliminary_years)
         assert not overlap, f"{ds.name}: {sorted(overlap)} declared both final and preliminary"
+
+
+def test_partial_coverage_geographies_do_not_snap():
+    """Snapping is only valid where a geography tiles the country.
+
+    CBSAs cover metro and micropolitan areas only — about 94% of grid cells
+    fall outside one. Snapping those to the nearest metro would move rural
+    population hundreds of kilometres into a city that does not contain it, and
+    the result would look entirely plausible: totals near the national figure,
+    every unit populated. It inflated the CBSA total from 303.7M to 317.3M
+    before this was caught.
+    """
+    geos = config.geographies()
+    assert geos["cbsa"].complete_coverage is False
+    assert geos["zcta"].complete_coverage is False
+
+    # Geographies that do tile the country must keep snapping, or genuine
+    # border cells would be dropped instead.
+    for name in ("county", "state", "tract", "puma", "cd"):
+        assert geos[name].complete_coverage is True, f"{name} should be complete-coverage"
+
+
+def test_partial_coverage_geographies_carry_a_caveat():
+    """A total that does not sum to the national figure needs saying so, or a
+    user comparing CBSA to state totals will assume the data is broken."""
+    reg = config.registry()["geographies"]
+    for name, spec in reg.items():
+        if spec.get("complete_coverage", True) is False:
+            assert spec.get("caveat") or name == "zcta", f"{name} needs a caveat"

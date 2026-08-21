@@ -163,6 +163,9 @@ def build(
                 "label": spec["label"],
                 "approx_units": spec.get("approx_units"),
                 "caveat": spec.get("caveat"),
+                # False where the geography does not tile the country, so the
+                # UI can explain why its totals fall short of the national one.
+                "complete_coverage": spec.get("complete_coverage", True),
             }
             for name, spec in reg["geographies"].items()
             if name in {e["geography"] for e in entries}

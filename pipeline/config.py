@@ -66,6 +66,8 @@ class Geography:
     source: str | None
     constant_id: str | None
     constant_name: str | None
+    complete_coverage: bool
+    state_prefixed: bool
 
 
 @cache
@@ -125,6 +127,10 @@ def geographies(max_phase: int | None = None) -> dict[str, Geography]:
             source=spec.get("source"),
             constant_id=spec.get("constant_id"),
             constant_name=spec.get("constant_name"),
+            # Most geographies tile the country; those that do not must not have
+            # unmatched cells snapped into them.
+            complete_coverage=spec.get("complete_coverage", True),
+            state_prefixed=spec.get("state_prefixed", False),
         )
     return out
 

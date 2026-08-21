@@ -79,7 +79,13 @@ def build(
     joined = joined[~joined.index.duplicated(keep="first")]  # cells on a shared edge
 
     unmatched = joined[joined["_geo_id"].isna()]
-    if len(unmatched) and config.registry()["aggregation"]["snap_unmatched_to_nearest"]:
+    snap = geo.complete_coverage and config.registry()["aggregation"]["snap_unmatched_to_nearest"]
+    if len(unmatched) and not snap:
+        console.print(
+            f"[dim]crosswalk {geography}: {len(unmatched):,} cells outside any unit, "
+            f"dropped (partial-coverage geography)[/dim]"
+        )
+    if len(unmatched) and snap:
         console.print(
             f"[yellow]crosswalk {geography}: {len(unmatched):,} unmatched, "
             f"snapping to nearest polygon[/yellow]"
@@ -103,10 +109,13 @@ def build(
 
     still = int(joined["_geo_id"].isna().sum())
     matched = len(joined) - still
+    pct = 100 * matched / len(joined)
+    # A complete-coverage geography that loses cells is a bug; a partial one
+    # losing them is expected and worth stating plainly either way.
+    colour = "red" if (geo.complete_coverage and still) else "dim"
     console.print(
-        f"crosswalk {geography}: matched {matched:,}/{len(joined):,} "
-        f"({100 * matched / len(joined):.3f}%)"
-        + (f", [red]{still:,} still unmatched[/red]" if still else "")
+        f"crosswalk {geography}: matched {matched:,}/{len(joined):,} ({pct:.3f}%)"
+        + (f", [{colour}]{still:,} outside any unit[/{colour}]" if still else "")
     )
 
     result = pd.DataFrame({
@@ -150,31 +159,34 @@ def _distinct_cells(dataset: str, year: int) -> pd.DataFrame:
 def _load_boundaries(geo: config.Geography, keep_extra: bool = False) -> gpd.GeoDataFrame:
     """Fetch and normalize a TIGER/Line layer to _geo_id / _geo_name / geometry."""
     if geo.per_state:
-        raise NotImplementedError(
-            f"{geo.name} ships one shapefile per state; needs the per-state loader (Phase 3)"
-        )
+        gdf = _load_per_state(geo, keep_extra=keep_extra)
+        return _select_columns(gdf, geo, keep_extra)
     if not geo.tiger_url:
         raise NotImplementedError(f"{geo.name} is not TIGER-backed (built_from={geo.built_from})")
 
-    CACHE.mkdir(exist_ok=True)
-    local = CACHE / f"tiger_{geo.name}"
-    if not local.exists():
-        console.print(f"[dim]downloading {geo.tiger_url}[/dim]")
-        resp = requests.get(geo.tiger_url, timeout=600)
-        resp.raise_for_status()
-        with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
-            zf.extractall(local)
-
+    local = _download(geo.tiger_url, CACHE / f"tiger_{geo.name}")
     shp = next(local.glob("*.shp"))
     gdf = gpd.read_file(shp)
+    return _select_columns(gdf, geo, keep_extra)
+
+
+def _select_columns(gdf, geo: config.Geography, keep_extra: bool) -> gpd.GeoDataFrame:
+    # ZCTAs have no name distinct from their code, so id_field and name_field
+    # are the same column. Keyed by source column, that collapses to a single
+    # entry and _geo_id is never produced — so copy instead of renaming.
+    if geo.id_field == geo.name_field:
+        out = gdf[[geo.id_field, "geometry"]].rename(columns={geo.id_field: "_geo_id"})
+        out["_geo_name"] = out["_geo_id"]
+        return gpd.GeoDataFrame(out, geometry="geometry", crs=gdf.crs)
+
     cols = {geo.id_field: "_geo_id", geo.name_field: "_geo_name"}
     if keep_extra:
         # Fields the name builder needs but the spatial join does not.
-        for src, dst in (("NAMELSAD", "_namelsad"), ("STUSPS", "_stusps")):
-            if src in gdf.columns:
+        for src, dst in (("NAMELSAD", "_namelsad"), ("NAMELSAD20", "_namelsad"),
+                         ("STUSPS", "_stusps")):
+            if src in gdf.columns and dst not in cols.values():
                 cols[src] = dst
-    gdf = gdf[[*cols, "geometry"]].rename(columns=cols)
-    return gdf
+    return gdf[[*cols, "geometry"]].rename(columns=cols)
 
 
 def build_names(geography: str, force: bool = False) -> Path:
@@ -219,10 +231,10 @@ def build_names(geography: str, force: bool = False) -> Path:
     if geography == "state":
         for _, r in shapes.iterrows():
             labels[r["_geo_id"]] = r["_geo_name"]
-    elif geography == "county":
-        # "Wayne County, MI" — the form people actually search for. NAMELSAD
-        # carries the type ("County", "Parish", "Borough"), which matters
-        # outside the lower 48.
+    elif geo.state_prefixed:
+        # "Wayne County, MI" — the form people search for. NAMELSAD carries the
+        # unit type ("County", "Parish", "Borough"), which matters outside the
+        # lower 48. The state suffix disambiguates the 30-odd Wayne Counties.
         abbr = _state_abbreviations()
         for _, r in shapes.iterrows():
             st = abbr.get(str(r["_geo_id"])[:2], "")
@@ -243,3 +255,61 @@ def _state_abbreviations() -> dict[str, str]:
         return {}
     shapes = _load_boundaries(geo, keep_extra=True)
     return dict(zip(shapes["_geo_id"], shapes.get("_stusps", shapes["_geo_name"])))
+
+
+def _download(url: str, dest: Path) -> Path:
+    """Fetch and unpack a TIGER archive, cached on disk."""
+    CACHE.mkdir(exist_ok=True)
+    if dest.exists() and any(dest.glob("*.shp")):
+        return dest
+    console.print(f"[dim]downloading {url.rsplit('/', 1)[-1]}[/dim]")
+    resp = requests.get(url, timeout=1800)
+    resp.raise_for_status()
+    with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
+        zf.extractall(dest)
+    return dest
+
+
+def _states_with_data() -> list[str]:
+    """State FIPS codes that carry data, from the state crosswalk.
+
+    Restricting to these avoids downloading shapefiles for territories the
+    source data does not cover — 5 fewer archives per per-state geography.
+    """
+    xwalk = CACHE / "xwalk_state.parquet"
+    if not xwalk.exists():
+        build("state")
+    ids = (
+        duckdb.connect()
+        .execute(f"SELECT DISTINCT geo_id FROM read_parquet('{xwalk.as_posix()}') ORDER BY 1")
+        .df()["geo_id"]
+    )
+    return [str(x) for x in ids]
+
+
+def _load_per_state(geo: config.Geography, keep_extra: bool = False) -> gpd.GeoDataFrame:
+    """Concatenate a geography that TIGER publishes one file per state.
+
+    Tract, PUMA, and congressional district are all shipped this way. Fetching
+    only the states that have data keeps this to ~51 small archives rather than
+    the full national set including territories.
+    """
+    frames = []
+    states = _states_with_data()
+    console.print(f"[dim]{geo.name}: fetching {len(states)} state files[/dim]")
+    for fips in states:
+        url = geo.tiger_url_pattern.format(state_fips=fips)
+        try:
+            local = _download(url, CACHE / f"tiger_{geo.name}" / fips)
+        except requests.HTTPError as exc:
+            # Some states have no units for some geographies (e.g. a state with
+            # a single at-large district may still publish, but not always).
+            console.print(f"[yellow]{geo.name} {fips}: {exc.response.status_code}, skipped[/yellow]")
+            continue
+        shp = next(local.glob("*.shp"), None)
+        if shp:
+            frames.append(gpd.read_file(shp))
+    if not frames:
+        raise RuntimeError(f"{geo.name}: no shapefiles could be loaded")
+    gdf = pd.concat(frames, ignore_index=True)
+    return gpd.GeoDataFrame(gdf, geometry="geometry", crs=frames[0].crs)
