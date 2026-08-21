@@ -239,24 +239,28 @@ geographies:
     approx_units: 2400
     state_prefixed: true
 
-  czone:
-    label: Commuting zone
+  # Vintage is in the id on purpose. ERS has published 1980, 1990, 2000, and
+  # 2020 delineations, and they are NOT interchangeable — 2020 uses the Penn
+  # State methodology adapted for contiguity, so results do not carry across
+  # vintages. Naming it `czone2020` means adding `czone1990` later cannot
+  # collide or silently change anyone's published numbers.
+  czone2020:
+    label: Commuting zone (2020)
     phase: 2
-    enabled: false
-    source: crosswalk          # not TIGER — built from a county-to-CZ crosswalk
+    source: crosswalk          # not TIGER — county-to-CZ mapping from USDA ERS
     built_from: county
-    approx_units: 741
-    # BLOCKED on a decision, not on code. Commuting zones are not a Census
-    # geography and have several published vintages (1990, 2000, 2010), which
-    # are NOT interchangeable — results are not comparable across them, and the
-    # literature this data serves is split. Picking one arbitrarily would create
-    # a reproducibility problem that looks like nothing is wrong.
-    #
-    # Once a vintage is chosen, this is cheap: CZs are unions of whole counties,
-    # so the county partitions can be summed directly with no spatial join.
-    blocked_on: >-
-      Choice of commuting-zone vintage (1990 / 2000 / 2010) and a citable
-      county-to-CZ crosswalk.
+    approx_units: 598
+    crosswalk_url: https://www.ers.usda.gov/media/6968/2020-commuting-zones.csv
+    crosswalk_key_field: FIPStxt      # county FIPS
+    crosswalk_value_field: CZ2020     # commuting zone number
+    crosswalk_name_field: CZName
+    citation: >-
+      USDA Economic Research Service, Commuting Zones and Labor Market Areas,
+      2020 delineation (updated January 2026).
+    note: >-
+      Commuting zones are built from journey-to-work data and group whole
+      counties, so they are derived by remapping the county crosswalk rather
+      than by a separate spatial join.
 
   zcta:
     label: ZIP Code Tabulation Area

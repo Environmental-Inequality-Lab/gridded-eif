@@ -49,6 +49,9 @@ def build(
     cells = _distinct_cells(reference_dataset, reference_year)
     console.print(f"crosswalk {geography}: {len(cells):,} grid cells")
 
+    if geo.built_from:
+        return _build_from_parent(geography, geo, out)
+
     if geo.source == "constant":
         # No spatial work: every cell belongs to the single unit by definition.
         result = pd.DataFrame({
@@ -211,6 +214,12 @@ def build_names(geography: str, force: bool = False) -> Path:
         console.print(f"[green]names {geography}: 1 entry[/green]")
         return out
 
+    if geo.built_from:
+        _, labels = _load_id_crosswalk(geo)
+        out.write_text(json.dumps(labels, sort_keys=True))
+        console.print(f"[green]names {geography}: {len(labels):,} entries[/green]")
+        return out
+
     # Restrict to units that actually carry data. TIGER includes Puerto Rico,
     # the USVI, Guam, American Samoa, and the Northern Marianas, none of which
     # the source data covers — listing them would offer a searchable place that
@@ -313,3 +322,64 @@ def _load_per_state(geo: config.Geography, keep_extra: bool = False) -> gpd.GeoD
         raise RuntimeError(f"{geo.name}: no shapefiles could be loaded")
     gdf = pd.concat(frames, ignore_index=True)
     return gpd.GeoDataFrame(gdf, geometry="geometry", crs=frames[0].crs)
+
+
+def _load_id_crosswalk(geo: config.Geography) -> tuple[dict[str, str], dict[str, str]]:
+    """Fetch a parent-id -> child-id mapping, plus child-id -> name."""
+    CACHE.mkdir(exist_ok=True)
+    local = CACHE / f"xw_src_{geo.name}.csv"
+    if not local.exists():
+        console.print(f"[dim]downloading {geo.crosswalk_url.rsplit('/', 1)[-1]}[/dim]")
+        resp = requests.get(geo.crosswalk_url, timeout=600)
+        resp.raise_for_status()
+        local.write_bytes(resp.content)
+
+    df = pd.read_csv(local, dtype={geo.crosswalk_key_field: str})
+    # Zero-pad so ids sort correctly as strings and stay stable in URLs.
+    width = len(str(int(df[geo.crosswalk_value_field].max())))
+    def to_id(v):
+        return str(int(v)).zfill(width)
+
+    mapping = {
+        str(r[geo.crosswalk_key_field]): to_id(r[geo.crosswalk_value_field])
+        for _, r in df.iterrows()
+    }
+    names = {}
+    if geo.crosswalk_name_field and geo.crosswalk_name_field in df.columns:
+        names = {
+            to_id(r[geo.crosswalk_value_field]): str(r[geo.crosswalk_name_field])
+            for _, r in df.iterrows()
+        }
+    return mapping, names
+
+
+def _build_from_parent(geography: str, geo: config.Geography, out: Path) -> Path:
+    """Derive a crosswalk by remapping a parent geography's ids.
+
+    Commuting zones group whole counties, so no spatial join is needed — the
+    county crosswalk already assigns every cell, and each county belongs to
+    exactly one CZ. Deriving rather than re-joining also guarantees the two
+    levels stay consistent: a CZ total is exactly the sum of its counties.
+    """
+    parent_path = build(geo.built_from)
+    mapping, _ = _load_id_crosswalk(geo)
+
+    con = duckdb.connect()
+    parent = con.execute(f"SELECT * FROM read_parquet('{parent_path.as_posix()}')").df()
+    parent["geo_id"] = parent["geo_id"].astype(str).map(mapping)
+
+    unmapped = int(parent["geo_id"].isna().sum())
+    if unmapped:
+        # A parent unit missing from the crosswalk would silently drop its
+        # population, so fail rather than publish a quietly short total.
+        raise ValueError(
+            f"{geography}: {unmapped:,} cells have a {geo.built_from} with no "
+            f"mapping in {geo.crosswalk_url}. Refusing to publish a partial crosswalk."
+        )
+
+    parent.to_parquet(out, index=False, compression="zstd")
+    console.print(
+        f"[green]crosswalk {geography}: {len(parent):,} cells -> "
+        f"{parent.geo_id.nunique():,} units (derived from {geo.built_from})[/green]"
+    )
+    return out

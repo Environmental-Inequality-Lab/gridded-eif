@@ -279,3 +279,26 @@ def test_partial_coverage_geographies_carry_a_caveat():
     for name, spec in reg.items():
         if spec.get("complete_coverage", True) is False:
             assert spec.get("caveat") or name == "zcta", f"{name} needs a caveat"
+
+
+def test_commuting_zone_id_carries_its_vintage():
+    """ERS has published 1980, 1990, 2000, and 2020 delineations, and the 2020
+    version uses a different methodology (Penn State, adapted for contiguity).
+    Results do not carry across vintages, so the id must name one — otherwise
+    adding a second vintage later would silently change published numbers."""
+    geos = config.geographies()
+    assert "czone" not in geos, "an unversioned commuting-zone id is ambiguous"
+    assert "czone2020" in geos
+    spec = config.registry()["geographies"]["czone2020"]
+    assert spec.get("citation"), "a non-Census geography needs its source cited"
+
+
+def test_derived_geographies_declare_their_parent_and_source():
+    """A geography built by remapping another must say so, and must carry a
+    fetchable crosswalk — otherwise the build silently has no input."""
+    for name, spec in config.registry()["geographies"].items():
+        if spec.get("source") != "crosswalk":
+            continue
+        assert spec.get("built_from"), f"{name} needs built_from"
+        assert spec.get("crosswalk_url"), f"{name} needs crosswalk_url"
+        assert spec.get("crosswalk_key_field") and spec.get("crosswalk_value_field")

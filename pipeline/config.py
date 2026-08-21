@@ -68,6 +68,10 @@ class Geography:
     constant_name: str | None
     complete_coverage: bool
     state_prefixed: bool
+    crosswalk_url: str | None
+    crosswalk_key_field: str | None
+    crosswalk_value_field: str | None
+    crosswalk_name_field: str | None
 
 
 @cache
@@ -131,6 +135,10 @@ def geographies(max_phase: int | None = None) -> dict[str, Geography]:
             # unmatched cells snapped into them.
             complete_coverage=spec.get("complete_coverage", True),
             state_prefixed=spec.get("state_prefixed", False),
+            crosswalk_url=spec.get("crosswalk_url"),
+            crosswalk_key_field=spec.get("crosswalk_key_field"),
+            crosswalk_value_field=spec.get("crosswalk_value_field"),
+            crosswalk_name_field=spec.get("crosswalk_name_field"),
         )
     return out
 
