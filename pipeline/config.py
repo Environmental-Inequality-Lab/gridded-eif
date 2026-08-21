@@ -34,9 +34,11 @@ class Dataset:
     preliminary_years: tuple[int, ...]
     preliminary_file_pattern: str | None
     unit: str
+    excluded_years: dict[int, str]
 
     def all_years(self) -> tuple[int, ...]:
-        return tuple(sorted(set(self.years) | set(self.preliminary_years)))
+        years = (set(self.years) | set(self.preliminary_years)) - set(self.excluded_years)
+        return tuple(sorted(years))
 
     def is_preliminary(self, year: int) -> bool:
         return year in self.preliminary_years
@@ -95,6 +97,7 @@ def datasets(enabled_only: bool = True) -> dict[str, Dataset]:
             preliminary_years=tuple(spec.get("preliminary_years", [])),
             preliminary_file_pattern=spec.get("preliminary_file_pattern"),
             unit=spec.get("unit", "people"),
+            excluded_years={int(k): v for k, v in (spec.get("excluded_years") or {}).items()},
         )
     return out
 
@@ -154,7 +157,8 @@ def parse_years(spec: str, dataset: str | None = None) -> list[int]:
     dropped — a typo in a backfill should fail loudly, not quietly build less
     than asked.
     """
-    available = set(datasets()[dataset].all_years()) if dataset else None
+    ds = datasets()[dataset] if dataset else None
+    available = set(ds.all_years()) if ds else None
 
     if spec.strip().lower() == "all":
         if available is None:
@@ -181,7 +185,15 @@ def parse_years(spec: str, dataset: str | None = None) -> list[int]:
             except ValueError:
                 raise ValueError(f"bad year {chunk!r}") from None
 
-    if available is not None:
+    if ds is not None:
+        # Excluded years are rejected with their reason, and checked separately
+        # from the declared range so that widening `years:` in the registry
+        # cannot quietly re-admit a year that was ruled out on purpose.
+        excluded = years & set(ds.excluded_years)
+        if excluded:
+            reasons = "; ".join(f"{y}: {ds.excluded_years[y]}" for y in sorted(excluded))
+            raise ValueError(f"{dataset} excludes {sorted(excluded)} — {reasons}")
+
         unknown = years - available
         if unknown:
             raise ValueError(

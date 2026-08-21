@@ -124,18 +124,6 @@ def build(
             "experimental": reg["source"]["experimental"],
         },
         "grid": reg["grid"],
-        "measures": reg["measures"],
-        "measure_selection_population_threshold": reg["measure_selection_population_threshold"],
-        "dimensions": reg["dimensions"],
-        "geographies": {
-            name: {
-                "label": spec["label"],
-                "approx_units": spec.get("approx_units"),
-                "caveat": spec.get("caveat"),
-            }
-            for name, spec in reg["geographies"].items()
-            if name in {e["geography"] for e in entries}
-        },
         "datasets": datasets,
         "aggregation": reg["aggregation"],
         "entries": entries,

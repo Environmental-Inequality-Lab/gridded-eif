@@ -121,7 +121,14 @@ datasets:
     enabled: true
     file_pattern: "gridded_eif_pop_ageracesex_{year}.parquet"
     preliminary_file_pattern: "gridded_eif_pop_ageracesex_{year}_realtime.parquet"
-    years: {start: 1999, end: 2024}
+    # Starts at 2000, not 1999. The 1999 file is anomalous — it captures only
+    # ~70% of the population where every later year is 85-96%, and EIL does not
+    # use it in practice. Excluded rather than merely warned about: a warning
+    # invites someone to click through, and the resulting series would be wrong.
+    # Set start to 1999 to opt back in.
+    years: {start: 2000, end: 2024}
+    excluded_years:
+      1999: "Anomalous administrative-records completeness (~70% vs 85-96% for all later years)." 
     preliminary_years: [2025]
     dimensions: [race_ethnicity, age_group, sex]
     unit: people
@@ -131,7 +138,9 @@ datasets:
     enabled: true
     file_pattern: "gridded_eif_pop_raceincome_{year}.parquet"
     preliminary_file_pattern: "gridded_eif_pop_raceincome_{year}_realtime.parquet"
-    years: {start: 1999, end: 2024}
+    years: {start: 2000, end: 2024}   # see ageracesex — 1999 excluded
+    excluded_years:
+      1999: "Anomalous administrative-records completeness (~70% vs 85-96% for all later years)." 
     preliminary_years: [2025]
     dimensions: [race_ethnicity, income_decile]
     unit: people

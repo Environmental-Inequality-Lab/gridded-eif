@@ -102,7 +102,7 @@ def test_parse_years_accepts_ranges_and_lists():
     assert parse_years("2018-2020", "ageracesex") == [2018, 2019, 2020]
     assert parse_years("2018,2020-2022", "ageracesex") == [2018, 2020, 2021, 2022]
     assert parse_years(" 2019 , 2021 ", "ageracesex") == [2019, 2021]
-    assert parse_years("all", "ageracesex")[0] == 1999
+    assert parse_years("all", "ageracesex")[0] == 2000  # 1999 excluded
 
 
 def test_parse_years_rejects_unavailable_years():
@@ -114,7 +114,52 @@ def test_parse_years_rejects_unavailable_years():
 
     with pytest.raises(ValueError, match="no data for"):
         parse_years("1990-1995", "ageracesex")
+    # 1999 is deliberately excluded — asking for it must fail loudly rather than
+    # quietly produce a series with an anomalous first year.
+    with pytest.raises(ValueError, match="excludes"):
+        parse_years("1999", "ageracesex")
+    # ...including when it is merely swept up in a wider range.
+    with pytest.raises(ValueError, match="excludes"):
+        parse_years("1999-2005", "ageracesex")
     with pytest.raises(ValueError, match="runs backwards"):
         parse_years("2022-2018", "ageracesex")
     with pytest.raises(ValueError, match="bad year"):
         parse_years("twenty-twenty", "ageracesex")
+
+
+def test_excluded_years_are_enforced_independently_of_the_declared_range():
+    """The exclusion must not be an artifact of where `years:` happens to start.
+
+    Someone widening the registry's year range later should not silently
+    re-admit a year that was ruled out on purpose, so exclusions are checked
+    separately rather than relying on the range to keep them out.
+    """
+    import pytest
+
+    from pipeline.config import Dataset, parse_years
+
+    ds = config.datasets()["ageracesex"]
+    assert 1999 in ds.excluded_years
+    assert ds.excluded_years[1999]                     # carries a reason
+    assert 1999 not in ds.all_years()
+
+    # Even a dataset whose declared range includes the excluded year keeps it out.
+    widened = Dataset(
+        name=ds.name, label=ds.label, enabled=True,
+        file_pattern=ds.file_pattern, dimensions=ds.dimensions,
+        years=tuple(range(1999, 2025)), preliminary_years=(),
+        preliminary_file_pattern=None, unit=ds.unit,
+        excluded_years=ds.excluded_years,
+    )
+    assert 1999 not in widened.all_years()
+
+    with pytest.raises(ValueError, match="excludes"):
+        parse_years("1999", "ageracesex")
+
+
+def test_no_completeness_figures_are_published():
+    """Completeness diagnostics were deliberately deferred. The registry should
+    not carry unsourced reference populations that could be mistaken for
+    authoritative, and the catalog should not emit a derived figure."""
+    assert "completeness" not in config.registry()
+    assert "coverage" not in config.registry()

@@ -1,58 +1,147 @@
 {
-  "contract_version": "1.0.0",
+  "contract_version": "1.1.0",
   "describes_data_version": "5.0",
   "derived_from": "empirical inspection of the 2022 source files, 2026-08-21",
-  "note": "The user guide's prose tables are correct; every code example in it is stale (pm25_grid_x, race_fact_simp, noisy_n_postproc). Build against this contract, not the guide. CI must fail loudly on drift.",
-
+  "note": "The user guide's prose tables are correct; every code example in it is stale (pm25_grid_x, race_fact_simp, noisy_n_postproc). Build against this contract, not the guide. CI must fail loudly on drift. Bounds below were measured across ALL years 1999-2025, not inferred from one file.",
   "datasets": {
     "ageracesex": {
       "columns": [
-        {"name": "grid_lon",              "type": "VARCHAR"},
-        {"name": "grid_lat",              "type": "VARCHAR"},
-        {"name": "age_group",             "type": "VARCHAR"},
-        {"name": "race_ethnicity",        "type": "VARCHAR"},
-        {"name": "sex",                   "type": "VARCHAR"},
-        {"name": "n_noise",               "type": "DOUBLE"},
-        {"name": "n_noise_postprocessed", "type": "DOUBLE"}
+        {
+          "name": "grid_lon",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "grid_lat",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "age_group",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "race_ethnicity",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "sex",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "n_noise",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "n_noise_postprocessed",
+          "type": "DOUBLE"
+        }
       ],
       "categories": {
-        "race_ethnicity": ["AIAN", "Asian", "Black", "Hispanic", "White", "Other/Unknown"],
-        "age_group":      ["Under 18", "19-65", "Over 65", "Missing Age"],
-        "sex":            ["M", "F", "Missing Gender"]
+        "race_ethnicity": [
+          "AIAN",
+          "Asian",
+          "Black",
+          "Hispanic",
+          "White",
+          "Other/Unknown"
+        ],
+        "age_group": [
+          "Under 18",
+          "19-65",
+          "Over 65",
+          "Missing Age"
+        ],
+        "sex": [
+          "M",
+          "F",
+          "Missing Gender"
+        ]
       },
-      "expected_rows_min": 15000000,
-      "expected_rows_max": 30000000
+      "expected_rows_min": 10000000,
+      "expected_rows_max": 32000000,
+      "observed_rows": {
+        "min": 13122120,
+        "min_year": 1999,
+        "max": 21225308,
+        "max_year": 2025,
+        "note": "Grows monotonically as administrative-records coverage improves."
+      }
     },
-
     "raceincome": {
       "columns": [
-        {"name": "grid_lon",              "type": "VARCHAR"},
-        {"name": "grid_lat",              "type": "VARCHAR"},
-        {"name": "income_decile",         "type": "DOUBLE"},
-        {"name": "race_ethnicity",        "type": "VARCHAR"},
-        {"name": "n_noise",               "type": "DOUBLE"},
-        {"name": "n_noise_postprocessed", "type": "DOUBLE"}
+        {
+          "name": "grid_lon",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "grid_lat",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "income_decile",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "race_ethnicity",
+          "type": "VARCHAR"
+        },
+        {
+          "name": "n_noise",
+          "type": "DOUBLE"
+        },
+        {
+          "name": "n_noise_postprocessed",
+          "type": "DOUBLE"
+        }
       ],
       "categories": {
-        "race_ethnicity": ["AIAN", "Asian", "Black", "Hispanic", "White", "Other/Unknown"],
-        "income_decile":  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        "race_ethnicity": [
+          "AIAN",
+          "Asian",
+          "Black",
+          "Hispanic",
+          "White",
+          "Other/Unknown"
+        ],
+        "income_decile": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
       },
-      "expected_rows_min": 15000000,
-      "expected_rows_max": 30000000
+      "expected_rows_min": 10000000,
+      "expected_rows_max": 32000000,
+      "observed_rows": {
+        "min": 13664368,
+        "min_year": 1999,
+        "max": 23423476,
+        "max_year": 2025,
+        "note": "Grows monotonically as administrative-records coverage improves."
+      }
     }
   },
-
   "grid": {
     "crs": "EPSG:4326",
     "resolution_deg": 0.01,
     "key_dtype": "string",
     "centroid_decimals": 3,
     "centroid_ends_in_5": true,
-    "bbox": {"min_lon": -177.0, "max_lon": -66.0, "min_lat": 18.0, "max_lat": 72.0},
+    "bbox": {
+      "min_lon": -177.0,
+      "max_lon": -66.0,
+      "min_lat": 18.0,
+      "max_lat": 72.0
+    },
     "expected_cells_min": 2000000,
     "expected_cells_max": 3500000
   },
-
   "invariants": [
     {
       "id": "postprocessing_preserves_race_totals",
@@ -62,10 +151,11 @@
     },
     {
       "id": "national_total_plausible",
-      "description": "Administrative-records coverage runs ~96% of true US population.",
-      "min": 250000000,
+      "description": "Administrative-records coverage is NOT constant over time: ~70% of the true US population in 1999, rising to ~96% by 2022. The floor accommodates the earliest, thinnest years.",
+      "min": 150000000,
       "max": 360000000,
-      "verified_2022": 319931068
+      "verified_2022": 319931068,
+      "verified_1999": 195442510
     },
     {
       "id": "postprocessed_non_negative",
@@ -78,11 +168,12 @@
       "verified_2022": "1,715,714 of 20,780,507 rows (8.3%), min -8"
     }
   ],
-
   "known_quirks": [
     "Missing objects behind CloudFront OAC return 403, not 404 (no s3:ListBucket).",
     "S3 guesses Content-Type application/x-www-form-urlencoded for .parquet; set it explicitly on upload.",
     "eif_grid_topology.rda is CONUS-only (lon -132..-65, lat 25..55) and omits AK/HI. Never use it as the grid definition.",
-    "Post-processing inflates the Over 65 count by ~1.5% nationally (~800k people) and more than doubles Missing Gender cells. Not documented upstream."
+    "Post-processing inflates the Over 65 count by ~1.5% nationally (~800k people) and more than doubles Missing Gender cells. Not documented upstream.",
+    "Records completeness improves over time: ~85% in the early 2000s rising to ~96% from 2015. A long count series therefore mixes population change with completeness change, and this must be surfaced in the UI rather than buried. 1999 is a severe outlier at ~70% and is excluded from the registry entirely.",
+    "The reference populations used to compute completeness are approximate and not yet sourced from a citable Census PEP release. Adequate for flagging outlier years; replace before publishing any derived figure as a headline number."
   ]
 }

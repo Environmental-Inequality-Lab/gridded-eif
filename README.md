@@ -92,7 +92,13 @@ alongside what is already live.
 **Adding a dataset, year, or geography should mean editing `variables.yaml` only.**
 If it requires touching a pipeline module or a UI component, that's a bug.
 
-## Two notes
+## Three notes
+
+**Coverage starts in 2000, not 1999.** The 1999 file is anomalous — its national
+total is far below every later year — and is excluded from the registry.
+Requesting it fails loudly rather than silently producing a series with a bad
+first year.
+
 
 **Two noise measures, not one.** `n_noise` is unbiased but can be negative (8.3%
 of grid rows in 2022). `n_noise_postprocessed` is non-negative but redistributes

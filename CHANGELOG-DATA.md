@@ -25,6 +25,13 @@ Initial build. Source data version 5.0 (Census).
 - Both noise measures (`n_noise`, `n_noise_postprocessed`) in every partition.
 
 ### Known characteristics
+- **1999 is excluded**; coverage begins in 2000. Its national total is far
+  outside the range of every other year and it is not used in practice.
+  Requesting it fails loudly rather than silently producing a series with an
+  anomalous first year.
+- Administrative-records completeness is not constant across years, which
+  matters for long count series. Per-year diagnostics are deferred to a later
+  release rather than shipped with unsourced reference figures.
 - Aggregation is lossless: county totals reproduce source national totals exactly.
 - 222 grid cells (14,214 people in 2022) sit outside all county polygons because
   they straddle the US–Canada and US–Mexico borders with centroids abroad. These
