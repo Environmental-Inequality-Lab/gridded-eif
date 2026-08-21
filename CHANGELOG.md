@@ -10,6 +10,20 @@ Versioning: [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Derived partitions are now sorted by `geo_id` and written with 8,000-row row
+  groups. Parquet stores min/max statistics per row group, so a contiguous sort
+  lets a single-place query skip the rest of the file. Measured on county 2024:
+  15 row groups with tight ranges, and a one-county lookup touches **1 of 15**
+  (~7% of the file) instead of scanning all of it. Sorting also improved
+  compression — files got *smaller* despite the smaller groups (1.3 MB → 1.2 MB).
+- `geif publish` now invalidates the data paths it replaced, not just the
+  catalog. Derived Parquet is served `immutable`, which is right almost always,
+  but a layout change rewrites files in place and edges would otherwise serve
+  stale bytes for a year while the catalog advertised a new sha256. Falls back
+  to a wildcard past 50 objects, which is billed as a single path.
+
+### Added
 ### Added
 - Pipeline: fetch, contract validation, crosswalk, aggregation, catalog, publish.
 - `catalog/variables.yaml` as the single declarative registry.

@@ -14,6 +14,7 @@ strict clients.
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import boto3
@@ -62,16 +63,37 @@ def publish(
             console.print(f"uploaded [green]{key}[/green] ({path.stat().st_size / 1e6:.1f} MB)")
         uploaded.append(key)
 
-    # Only the catalog needs invalidating — everything else is immutable, so a
-    # blanket /* invalidation would just cost money and evict warm cache.
     if distribution_id and not dry_run:
-        boto3.client("cloudfront").create_invalidation(
-            DistributionId=distribution_id,
-            InvalidationBatch={
-                "Paths": {"Quantity": 1, "Items": [f"/{CATALOG_FILENAME}"]},
-                "CallerReference": str(Path(build_dir).stat().st_mtime_ns),
-            },
-        )
-        console.print(f"invalidated /{CATALOG_FILENAME}")
+        _invalidate(distribution_id, uploaded)
 
     return uploaded
+
+
+def _invalidate(distribution_id: str, uploaded: list[str]) -> None:
+    """Invalidate what we just replaced.
+
+    Derived Parquet is served ``immutable``, which is correct almost always —
+    a partition's contents rarely change once built. But a pipeline change that
+    alters the physical layout (say, sorting rows so Parquet row-group pruning
+    works) rewrites those files in place, and edges would otherwise keep serving
+    the old bytes for a year while the catalog advertises a new sha256.
+
+    Invalidating precisely what was uploaded keeps the rest of the cache warm.
+    Past a threshold that stops being worth the request count, and a wildcard is
+    both cheaper to submit and billed as a single path.
+    """
+    cf = boto3.client("cloudfront")
+    paths = [f"/{k}" for k in uploaded]
+    if len(paths) > 50:
+        paths = ["/*"]
+        console.print(f"invalidating [yellow]/*[/yellow] ({len(uploaded)} objects changed)")
+    else:
+        console.print(f"invalidating {len(paths)} path(s)")
+
+    cf.create_invalidation(
+        DistributionId=distribution_id,
+        InvalidationBatch={
+            "Paths": {"Quantity": len(paths), "Items": paths},
+            "CallerReference": f"geif-{time.time_ns()}",
+        },
+    )

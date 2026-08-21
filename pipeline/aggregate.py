@@ -79,11 +79,21 @@ def build(
         JOIN read_parquet('{crosswalk_path.as_posix()}') x
           ON d.grid_lon = x.grid_lon AND d.grid_lat = x.grid_lat
         GROUP BY 1, {group_dims}
+        -- Sorting by geo_id is what makes Parquet row-group statistics useful:
+        -- each row group then covers a contiguous span of geographies, so a
+        -- query filtered to one place can skip the rest of the file. Unsorted,
+        -- every row group spans nearly every geography and nothing is skippable.
+        ORDER BY geo_id, {group_dims}
     """)
 
+    # Small row groups so pruning is fine-grained. At ~117k rows a 100k group
+    # size yields two groups and prunes almost nothing; 8k yields ~15 groups,
+    # and a single-county lookup touches one or two of them. The compression
+    # cost is a few percent — worth it for interactive single-place queries,
+    # which are the common case.
     con.execute(f"""
         COPY part TO '{out_path.as_posix()}'
-        (FORMAT PARQUET, COMPRESSION ZSTD, ROW_GROUP_SIZE 100000)
+        (FORMAT PARQUET, COMPRESSION ZSTD, ROW_GROUP_SIZE 8000)
     """)
 
     rows, units, total_raw, total_pp = con.execute("""
