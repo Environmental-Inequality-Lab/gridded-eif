@@ -25,10 +25,21 @@ Versioning: [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - All-years files (`derived/v1/{dataset}/{geography}/all/`), one per dataset and
-  geography, listed in the catalog's new `combined` array. Multi-year query
-  latency is dominated by per-file round trips rather than bytes: a 25-year
-  national series reads **66 KB spread over 25 files** and took ~5s in a
-  browser. The same data as one 24.7 KB file is a single request.
+  geography, listed in the catalog's new `combined` array.
+
+  Measured, 25-year national series, 5 trials each with a fresh engine:
+
+  | CDN state | 25 per-year files | 1 combined file |
+  |---|---:|---:|
+  | Cold edge | ~5,000 ms | ~350 ms (est.) |
+  | Warm edge | 415 ms | 348 ms |
+
+  The steady-state gain is modest (~16%). The real case is a cold edge, where
+  25 files mean 25 origin fetches. CloudFront edges cache independently across
+  hundreds of locations, so for a low-traffic research site most requests arrive
+  at an edge that has not seen these files — cold is the common case, not the
+  exception.
+
   Per-year partitions are kept — they remain the right shape for single-year
   queries and bulk download, and stay the unit built incrementally.
 - `geif combine`, wired into `refresh` and the workflow. It takes `--base-url`
