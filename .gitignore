@@ -95,3 +95,17 @@ Thumbs.db
 scratch/
 tmp/
 prototype/*.parquet
+
+# ---------------------------------------------------------------------------
+# Local dev artifacts
+# ---------------------------------------------------------------------------
+# A catalog built locally for testing the site. The deployed site must fetch
+# the PUBLISHED catalog at runtime — shipping a frozen copy would mean every
+# data update required a site redeploy, defeating the whole design.
+# (Note: '#' only starts a comment at the START of a line in .gitignore.)
+site/catalog.json
+
+# Editor/agent tooling — local, and settings files here can carry machine
+# paths and permissions. How to run the site locally is documented in README
+# instead, which is tool-agnostic.
+.claude/

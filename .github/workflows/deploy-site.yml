@@ -1,0 +1,70 @@
+name: Deploy site
+
+# The site is static files with no build step — Preact and htm are vendored,
+# DuckDB-WASM loads from a pinned CDN. Deployment is a copy, so there is no
+# toolchain here that can break independently of the code.
+#
+# It is also decoupled from the data: catalog.json is fetched at runtime, so
+# publishing new years never requires deploying the site, and deploying the
+# site never touches the data.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/deploy-site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Catches the mistake that would be invisible until someone opened the
+      # site: a module that references a file that is not there.
+      - name: Check local module references resolve
+        run: |
+          cd site
+          missing=0
+          while read -r file; do
+            while read -r ref; do
+              target="$(dirname "$file")/$ref"
+              if [ ! -f "$target" ]; then
+                echo "::error file=$file::missing local import '$ref'"
+                missing=1
+              fi
+            done < <(grep -oE "from '\./[^']+'|from '\.\./[^']+'" "$file" \
+                      | sed "s/from '//;s/'$//")
+          done < <(find . -name '*.js' -not -path './js/vendor/*')
+          [ "$missing" -eq 0 ] || exit 1
+          echo "all local imports resolve"
+
+      # A dev artifact — the site must read the published catalog, not a copy
+      # frozen at deploy time, or data updates would need a site redeploy.
+      - name: Ensure no local catalog is shipped
+        run: |
+          if [ -f site/catalog.json ]; then
+            echo "::error::site/catalog.json is a development artifact and must not be deployed"
+            exit 1
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

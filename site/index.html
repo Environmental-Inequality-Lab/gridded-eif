@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gridded EIF Explorer</title>
+<meta name="description" content="Pre-aggregated Gridded Environmental Impacts Frame data — population by age, race, sex, and income for US counties, states, and the nation. An Environmental Inequality Lab project." />
+<meta name="color-scheme" content="light dark" />
+
+<meta property="og:title" content="Gridded EIF Explorer" />
+<meta property="og:description" content="Population by age, race, sex, and income, aggregated from the Census Gridded EIF." />
+<meta property="og:type" content="website" />
+
+<link rel="icon" href="assets/favicon.ico" sizes="16x16 32x32" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://d2l6ob0rkxsi9o.cloudfront.net" crossorigin />
+<link rel="stylesheet" href="css/tokens.css" />
+<link rel="stylesheet" href="css/app.css" />
+
+<!-- Resolves the one bare specifier in preact's vendored hooks build.
+     Everything else is a relative path, so the site runs from any base path
+     with no build step and no configuration. -->
+<script type="importmap">
+{
+  "imports": {
+    "preact": "./js/vendor/preact.module.js"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app">
+  <noscript>
+    <div style="padding:32px;max-width:60ch;margin:0 auto;font-family:system-ui,sans-serif">
+      <h1>Gridded EIF Explorer</h1>
+      <p>This explorer runs queries in your browser and needs JavaScript.</p>
+      <p>
+        The underlying data is plain Parquet and does not:
+        see the <a href="https://github.com/Environmental-Inequality-Lab/gridded-eif">source
+        repository</a> for direct file URLs, or the
+        <a href="https://www2.census.gov/ces/gridded_eif/">Census file directory</a>
+        for the raw grid.
+      </p>
+    </div>
+  </noscript>
+</div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

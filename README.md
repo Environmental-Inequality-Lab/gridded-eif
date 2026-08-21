@@ -79,6 +79,20 @@ twenty minutes into a backfill. Catalog and publish run once at the end: if a
 year fails nothing is published, and re-running the failing subrange folds it in
 alongside what is already live.
 
+## Running the site locally
+
+No build step — Preact and htm are vendored, DuckDB-WASM loads from a pinned
+CDN. Any static server works; ES modules just need `http://` rather than
+`file://`:
+
+```bash
+python3 -m http.server 8765 --directory site
+```
+
+Then open <http://localhost:8765>. To test against a locally built catalog
+instead of the published one, append `?catalog=./catalog.json` after running
+`geif catalog`.
+
 ## Layout
 
 | Path | What it is |
@@ -87,6 +101,7 @@ alongside what is already live.
 | `catalog/contracts/` | Pinned source schema, derived from the files themselves. |
 | `pipeline/` | Fetch → validate → crosswalk → aggregate → catalog → publish. |
 | `tests/` | Registry consistency and regression tests against verified figures. |
+| `site/` | The explorer. Static files, no build step. |
 | `prototype/` | Early reconnaissance scripts. Superseded by `pipeline/`. |
 
 **Adding a dataset, year, or geography should mean editing `variables.yaml` only.**

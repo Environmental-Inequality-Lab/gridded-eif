@@ -189,3 +189,64 @@ def test_no_year_examples_reference_the_excluded_year():
                 assert str(year) not in line, (
                     f"{path.name}:{lineno} uses excluded year {year} in an example: {line.strip()}"
                 )
+
+
+def test_catalog_carries_everything_the_ui_renders_from():
+    """The site builds its facets, geography list, and measure guidance from the
+    catalog rather than hardcoding them — that is what lets new data appear
+    without a site rebuild. A missing key here does not fail the pipeline; it
+    silently breaks the UI, which is how these went missing once already.
+    """
+    import json
+
+    from pipeline import aggregate
+    from pipeline import catalog as catalog_mod
+
+    part = aggregate.Partition(
+        dataset="ageracesex", geography="county", year=2022,
+        path="derived/v1/ageracesex/county/2022/part-00.parquet",
+        rows=1, bytes=1, sha256="x", preliminary=False,
+        pipeline_version="test", total_raw=1.0, total_postprocessed=1.0, geo_units=1,
+    )
+    cat = catalog_mod.build([part], "https://example.test")
+
+    for key in ("measures", "measure_selection_population_threshold",
+                "dimensions", "geographies", "datasets", "entries",
+                "combined", "source", "grid", "aggregation"):
+        assert key in cat, f"catalog is missing {key!r}, which the UI depends on"
+
+    # The dimensions actually referenced by a dataset must be described.
+    for dim in cat["datasets"]["ageracesex"]["dimensions"]:
+        assert dim in cat["dimensions"], f"dimension {dim!r} has no definition"
+        assert cat["dimensions"][dim].get("values"), f"dimension {dim!r} has no values"
+
+    # Every geography that appears in an entry must have a label.
+    for e in cat["entries"]:
+        assert e["geography"] in cat["geographies"], f"no metadata for {e['geography']}"
+        assert cat["geographies"][e["geography"]].get("label")
+
+    json.dumps(cat)   # must be serialisable
+
+
+def test_preliminary_years_resolve_to_realtime_files():
+    """2025 is a preliminary vintage published under a different filename.
+
+    It must be reachable, correctly flagged, and resolve to the _realtime file —
+    a mismatch here would either 404 or, worse, silently build a final-looking
+    partition from preliminary data.
+    """
+    ds = config.datasets()["ageracesex"]
+    assert 2025 in ds.preliminary_years
+    assert config.parse_years("2025", "ageracesex") == [2025]
+    assert ds.is_preliminary(2025)
+    assert ds.filename(2025).endswith("_2025_realtime.parquet")
+    assert not ds.is_preliminary(2024)
+    assert ds.filename(2024).endswith("_2024.parquet")
+
+
+def test_preliminary_years_are_excluded_from_the_final_range():
+    """`years:` covers final vintages only, so a caller asking for the final
+    range never silently picks up preliminary data."""
+    for ds in config.datasets().values():
+        overlap = set(ds.years) & set(ds.preliminary_years)
+        assert not overlap, f"{ds.name}: {sorted(overlap)} declared both final and preliminary"

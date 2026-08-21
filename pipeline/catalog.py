@@ -152,6 +152,21 @@ def build(
             "experimental": reg["source"]["experimental"],
         },
         "grid": reg["grid"],
+        # Registry metadata the UI renders from. Without these the site cannot
+        # label a facet, offer a geography, or explain a measure — it would have
+        # to hardcode them, which is the exact coupling this design avoids.
+        "measures": reg["measures"],
+        "measure_selection_population_threshold": reg["measure_selection_population_threshold"],
+        "dimensions": reg["dimensions"],
+        "geographies": {
+            name: {
+                "label": spec["label"],
+                "approx_units": spec.get("approx_units"),
+                "caveat": spec.get("caveat"),
+            }
+            for name, spec in reg["geographies"].items()
+            if name in {e["geography"] for e in entries}
+        },
         "datasets": datasets,
         "aggregation": reg["aggregation"],
         # Per-year partitions: the right shape for single-year queries and bulk
