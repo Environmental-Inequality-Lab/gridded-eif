@@ -49,20 +49,25 @@ def datasets() -> None:
 @app.command()
 def validate_source(
     dataset: str = typer.Option(..., "--dataset"),
-    year: int = typer.Option(..., "--year"),
+    year: str = typer.Option(..., "--year", help="Year, range, or list. See `build`."),
     invariants: bool = typer.Option(True, help="Also check statistical invariants (slower)"),
 ) -> None:
-    """Check a source file against the pinned schema contract."""
-    rep = validate.validate_source(dataset, year)
-    for w in rep.warnings:
-        console.print(f"[yellow]warning:[/yellow] {w}")
-    rep.raise_if_failed()
-    console.print(f"[green]schema OK[/green] — {rep.rows:,} rows")
+    """Check source files against the pinned schema contract.
 
-    if invariants:
-        inv = validate.check_invariants(dataset, year)
-        inv.raise_if_failed()
-        console.print(f"[green]invariants OK[/green] — national total {inv.rows:,}")
+    Goes through the same year resolution as `build`, so excluded years are
+    rejected here too rather than leaving a side door open.
+    """
+    for y in config.parse_years(year, dataset):
+        rep = validate.validate_source(dataset, y)
+        for w in rep.warnings:
+            console.print(f"[yellow]{dataset} {y} warning:[/yellow] {w}")
+        rep.raise_if_failed()
+        console.print(f"[green]{dataset} {y} schema OK[/green] — {rep.rows:,} rows")
+
+        if invariants:
+            inv = validate.check_invariants(dataset, y)
+            inv.raise_if_failed()
+            console.print(f"[green]{dataset} {y} invariants OK[/green] — total {inv.rows:,}")
 
 
 @app.command()
@@ -80,7 +85,7 @@ def build(
     year: str = typer.Option(
         ...,
         "--year",
-        help="Year, range, or list: 2022 | 1999-2024 | 2018,2020-2022 | all",
+        help="Year, range, or list: 2022 | 2000-2024 | 2018,2020-2022 | all",
     ),
     dataset: str = typer.Option(None, "--dataset", help="Default: all enabled datasets"),
     skip_validation: bool = typer.Option(False, "--skip-validation"),

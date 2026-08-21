@@ -149,7 +149,7 @@ def parse_years(spec: str, dataset: str | None = None) -> list[int]:
     Accepts single years, inclusive ranges, and comma-separated combinations:
 
         "2022"              -> [2022]
-        "1999-2024"         -> [1999, 2000, ..., 2024]
+        "2000-2024"         -> [2000, 2001, ..., 2024]
         "2018,2020-2022"    -> [2018, 2020, 2021, 2022]
         "all"               -> every year the dataset declares, preliminary included
 
@@ -175,7 +175,7 @@ def parse_years(spec: str, dataset: str | None = None) -> list[int]:
             try:
                 lo, hi = int(start), int(end)
             except ValueError:
-                raise ValueError(f"bad year range {chunk!r}; expected e.g. 1999-2024") from None
+                raise ValueError(f"bad year range {chunk!r}; expected e.g. 2000-2024") from None
             if lo > hi:
                 raise ValueError(f"range {chunk!r} runs backwards")
             years.update(range(lo, hi + 1))

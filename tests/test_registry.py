@@ -163,3 +163,29 @@ def test_no_completeness_figures_are_published():
     authoritative, and the catalog should not emit a derived figure."""
     assert "completeness" not in config.registry()
     assert "coverage" not in config.registry()
+
+
+def test_no_year_examples_reference_the_excluded_year():
+    """Copy-pasteable examples must not name a year that will be rejected.
+
+    Help text, docs, and the workflow input description are all things someone
+    copies verbatim; an example of "1999-2024" would fail immediately and look
+    like a broken tool rather than a deliberate exclusion.
+    """
+
+    excluded = set(config.datasets()["ageracesex"].excluded_years)
+    root = config.REPO_ROOT
+    targets = [
+        root / ".github" / "workflows" / "refresh-data.yml",
+        root / "pipeline" / "cli.py",
+        root / "README.md",
+    ]
+    for path in targets:
+        for lineno, line in enumerate(path.read_text().splitlines(), 1):
+            # Only inspect lines that look like a usage example.
+            if "--year" not in line and "Year, range, or list" not in line:
+                continue
+            for year in excluded:
+                assert str(year) not in line, (
+                    f"{path.name}:{lineno} uses excluded year {year} in an example: {line.strip()}"
+                )

@@ -61,7 +61,7 @@ geif build --geography county --year 2022
 `all` — so a full backfill is one command:
 
 ```bash
-geif build --geography county --year 1999-2024
+geif build --geography county --year 2000-2024
 ```
 
 ```bash

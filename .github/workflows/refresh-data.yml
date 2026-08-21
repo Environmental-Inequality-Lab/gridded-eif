@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       year:
-        description: "Year, range, or list — 2022 | 1999-2024 | 2018,2020-2022 | all"
+        description: "Year, range, or list — 2022 | 2000-2024 | 2018,2020-2022 | all"
         required: true
         type: string
       geography:

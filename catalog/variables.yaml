@@ -121,11 +121,14 @@ datasets:
     enabled: true
     file_pattern: "gridded_eif_pop_ageracesex_{year}.parquet"
     preliminary_file_pattern: "gridded_eif_pop_ageracesex_{year}_realtime.parquet"
-    # Starts at 2000, not 1999. The 1999 file is anomalous — it captures only
-    # ~70% of the population where every later year is 85-96%, and EIL does not
-    # use it in practice. Excluded rather than merely warned about: a warning
-    # invites someone to click through, and the resulting series would be wrong.
-    # Set start to 1999 to opt back in.
+    # Starts at 2000. The 1999 file is anomalous — it captures only ~70% of the
+    # population where every later year is 85-96%, and EIL does not use it.
+    # Excluded rather than merely warned about: a warning invites someone to
+    # click through, and the resulting series would be wrong.
+    #
+    # To re-admit it you must BOTH set `start: 1999` AND delete the
+    # `excluded_years` entry below. The exclusion is enforced independently of
+    # the range precisely so that widening the range cannot silently undo it.
     years: {start: 2000, end: 2024}
     excluded_years:
       1999: "Anomalous administrative-records completeness (~70% vs 85-96% for all later years)." 
@@ -160,6 +163,11 @@ datasets:
     note: >-
       Source coverage is staggered — SEDAC ends 2016, CACES 2020, ACAG 2022.
       Each variable must declare its own year range.
+      NOTE: the 1999 exclusion on the population datasets does NOT carry over
+      here — this is satellite and land-use-model data from ACAG/CACES/SEDAC,
+      not EIF administrative records. The 1999 pollutant file is markedly
+      smaller than 2000-2016 (55 MB vs 104 MB), which needs its own review
+      before this dataset is enabled.
 
   extreme_weather:
     label: Extreme weather exposure
