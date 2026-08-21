@@ -24,6 +24,26 @@ Versioning: [SemVer](https://semver.org/spec/v2.0.0.html).
   to a wildcard past 50 objects, which is billed as a single path.
 
 ### Added
+- **Choropleth map.** MapLibre, loaded lazily since it is the heaviest
+  dependency and most visits never open it. Geometry and values stay strictly
+  separate: boundary GeoJSON carries `geo_id` and nothing else, and query
+  results are joined to features at render time via feature-state. A new year
+  of data therefore needs no new geometry, and one boundary file serves every
+  measure, year, and filter.
+- **Simplified boundary GeoJSON** (`geif boundaries`), topology-preserving via
+  `topojson` so adjacent units keep shared borders — per-polygon simplification
+  tears gaps that read as missing data. Counties compress from 204 MB of raw
+  TIGER geometry to 3.2 MB. Plain GeoJSON rather than vector tiles because no
+  tiling toolchain is available here or in CI, and at these feature counts it
+  is small enough to serve directly.
+- Quantile class breaks. Population is heavily skewed, so equal-interval breaks
+  would paint nearly everything the lightest shade.
+
+### Fixed
+- One failing query no longer blanks the other views. The table, time series,
+  and map read different files; `Promise.all` meant an unavailable all-years
+  file took the table and map down with it. Now `allSettled`, with the series
+  reporting its own failure in place.
 - All-years files (`derived/v1/{dataset}/{geography}/all/`), one per dataset and
   geography, listed in the catalog's new `combined` array.
 

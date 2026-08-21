@@ -172,6 +172,15 @@ def combined_key(dataset: str, geography: str) -> str:
     return f"derived/{DERIVED_VERSION}/{dataset}/{geography}/all/part-00.parquet"
 
 
+def boundaries_key(geography: str) -> str:
+    """S3 key for a geography's simplified GeoJSON.
+
+    Version-prefixed alongside the data. Boundaries carry only `geo_id`, never
+    values, so geometry and data update independently.
+    """
+    return f"derived/{DERIVED_VERSION}/_boundaries/{geography}.geojson"
+
+
 def names_key(geography: str) -> str:
     """S3 key for a geography's id -> name lookup. Version-prefixed with the
     rest of the derived data, since names follow a TIGER boundary vintage."""

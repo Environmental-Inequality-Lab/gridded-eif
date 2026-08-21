@@ -17,6 +17,7 @@ from rich.console import Console
 from rich.table import Table
 
 from . import aggregate, config, crosswalk, validate
+from . import boundaries as boundaries_mod
 from . import catalog as catalog_mod
 from . import publish as publish_mod
 
@@ -157,6 +158,24 @@ def names(
     for level in levels:
         src = crosswalk.build_names(level, force=force)
         dest = BUILD_DIR / config.names_key(level)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(src.read_text())
+
+
+@app.command()
+def boundaries(
+    geography: str = typer.Option(None, "--geography", help="Default: every level built"),
+    force: bool = typer.Option(False, "--force"),
+) -> None:
+    """Build simplified boundary GeoJSON for the map."""
+    if geography:
+        levels = [g.strip() for g in geography.split(",")]
+    else:
+        led = BUILD_DIR / "_ledger"
+        levels = sorted({p.parent.name for p in led.rglob("*.json") if p.parent.name != "_combined"})
+    for level in levels:
+        src = boundaries_mod.build(level, force=force)
+        dest = BUILD_DIR / config.boundaries_key(level)
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(src.read_text())
 

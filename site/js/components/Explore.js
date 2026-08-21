@@ -3,14 +3,17 @@ import { query, buildQuery, q } from '../duck.js';
 import { entryUrl, combinedUrl, yearsFor, isPreliminary, dimension, defaultMeasure } from '../catalog.js';
 import { QueryPanel } from './QueryPanel.js';
 import { ResultsTable, TimeSeries, exportCsv } from './Results.js';
+import { MapView } from './MapView.js';
 import { Notice, Spinner } from './Chrome.js';
 import { count, toCsv, download } from '../format.js';
 
 export function Explore({ cat, state, go, toggleFacet, places }) {
   const [rows, setRows] = useState([]);
+  const [mapRows, setMapRows] = useState([]);
   const [series, setSeries] = useState([]);
   const [busy, setBusy] = useState(true);
   const [err, setErr] = useState(null);
+  const [seriesErr, setSeriesErr] = useState(null);
   const [ms, setMs] = useState(null);
 
   const ds = cat.datasets[state.d];
@@ -27,6 +30,12 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
   }, [cat, state.d, year]);
   const auto = state.m == null;
   const measure = state.m || defaultMeasure(cat, state.g === 'nation' ? nationTotal : 0);
+
+  const placeNames = useMemo(() => {
+    const out = {};
+    for (const p of places) if (p.level === state.g) out[p.geo_id] = p.name;
+    return out;
+  }, [places, state.g]);
 
   const groupBy = state.p || state.g === 'nation' ? (ds?.dimensions || []) : ['geo_id'];
   const url = entryUrl(cat, state.d, state.g, year);
@@ -48,17 +57,42 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
           'ORDER BY value DESC', 'ORDER BY year')
       : null;
 
-    Promise.all([query(tableSql), seriesSql ? query(seriesSql) : Promise.resolve([])])
-      .then(([t, s]) => {
+    // The map always shows every unit, so it drops the single-place filter
+    // that the table applies. Only run it for levels that have geometry, and
+    // never for nation, where a one-feature choropleth says nothing.
+    const wantMap = state.tab === 'map' && cat.boundaries?.[state.g] && state.g !== 'nation';
+    const mapFilters = { ...state.facets };
+    const mapSql = wantMap
+      ? buildQuery({ url, measure, groupBy: ['geo_id'], filters: mapFilters })
+      : null;
+
+    // allSettled, not all: the three views read different files, and one
+    // being unavailable should not blank the other two. A missing all-years
+    // file must not take the table and map down with it.
+    Promise.allSettled([
+      query(tableSql),
+      seriesSql ? query(seriesSql) : Promise.resolve([]),
+      mapSql ? query(mapSql) : Promise.resolve(null),
+    ])
+      .then(([t, s, mp]) => {
         if (cancelled) return;
-        setRows(t); setSeries(s.map((r) => ({ year: Number(r.year), value: r.value })));
+        if (t.status === 'fulfilled') setRows(t.value);
+        if (s.status === 'fulfilled') {
+          setSeries(s.value.map((r) => ({ year: Number(r.year), value: r.value })));
+          setSeriesErr(null);
+        } else {
+          setSeries([]);
+          setSeriesErr(String(s.reason?.message || s.reason));
+        }
+        if (mp.status === 'fulfilled' && mp.value) setMapRows(mp.value);
         setMs(Math.round(performance.now() - t0));
+        // Only the table failing is fatal — it is what every other view hangs off.
+        setErr(t.status === 'rejected' ? String(t.reason?.message || t.reason) : null);
       })
-      .catch((e) => !cancelled && setErr(String(e.message || e)))
       .finally(() => !cancelled && setBusy(false));
 
     return () => { cancelled = true; };
-  }, [url, seriesUrl, measure, state.p, state.g, state.d, year, JSON.stringify(state.facets)]);
+  }, [url, seriesUrl, measure, state.p, state.g, state.d, year, state.tab, JSON.stringify(state.facets)]);
 
   const placeName = useMemo(
     () => places?.find((p) => p.geo_id === state.p && p.level === state.g)?.name,
@@ -138,6 +172,9 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
                     onClick=${() => go({ tab: 'table' })}>Table</button>
             <button class=${'tab' + (state.tab === 'series' ? ' on' : '')}
                     onClick=${() => go({ tab: 'series' })}>Time series</button>
+            ${cat.boundaries?.[state.g] && state.g !== 'nation' && html`
+              <button class=${'tab' + (state.tab === 'map' ? ' on' : '')}
+                      onClick=${() => go({ tab: 'map' })}>Map</button>`}
             <button class=${'tab' + (state.tab === 'code' ? ' on' : '')}
                     onClick=${() => go({ tab: 'code' })}>Get the data</button>
           </div>
@@ -158,6 +195,13 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
                     coverage as well as population. Read long trends with care.
                   <//>
                 </div>`}
+              ${seriesErr && html`
+                <div style="padding:0 16px 12px">
+                  <${Notice} kind="warn">
+                    <strong>The year-by-year file could not be read.</strong> ${seriesErr}
+                    ${' '}The table and map above are unaffected.
+                  <//>
+                </div>`}
               <${TimeSeries} series=${series} preliminaryYears=${preliminaryYears}
                 label=${`${placeName || 'United States'} — ${cat.measures[measure].label.toLowerCase()}`} />
               <div style="padding:0 16px 16px">
@@ -167,6 +211,22 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
                   Download series CSV
                 </button>
               </div>
+            </div>`}
+
+          ${state.tab === 'map' && html`
+            <div style="padding:8px">
+              <${MapView}
+                rows=${mapRows}
+                geography=${state.g}
+                boundariesUrl=${cat.boundaries?.[state.g]}
+                names=${placeNames}
+                valueLabel=${`${ds?.label || ''} · ${year}`}
+                selected=${state.p}
+                onPick=${(id) => go({ p: state.p === id ? null : id })} />
+              <p class="small muted" style="margin-top:10px">
+                Colour shows ${measure === 'n_noise' ? 'raw' : 'post-processed'} counts for
+                the current filters. Units with no data are grey.
+              </p>
             </div>`}
 
           ${state.tab === 'code' && html`<${CodeTab} cat=${cat} url=${url}

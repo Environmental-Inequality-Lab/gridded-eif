@@ -29,6 +29,7 @@ IMMUTABLE = "public, max-age=31536000, immutable"
 SHORT = "public, max-age=300, must-revalidate"
 
 CONTENT_TYPES = {
+    ".geojson": "application/geo+json",
     ".parquet": "application/octet-stream",
     ".json": "application/json",
     ".pmtiles": "application/octet-stream",
@@ -53,7 +54,11 @@ def publish(
         key = path.relative_to(build_dir).as_posix()
         # Parquet at a versioned path never changes. The catalog and the name
         # lookups can be rewritten in place, so they get a short TTL.
-        mutable = path.name == CATALOG_FILENAME or "_names" in path.parts
+        mutable = (
+            path.name == CATALOG_FILENAME
+            or "_names" in path.parts
+            or "_boundaries" in path.parts
+        )
         extra = {
             "ContentType": CONTENT_TYPES.get(path.suffix, "application/octet-stream"),
             "CacheControl": SHORT if mutable else IMMUTABLE,

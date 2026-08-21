@@ -176,6 +176,12 @@ def build(
             g: f"{base_url.rstrip('/')}/{config.names_key(g)}"
             for g in sorted({e["geography"] for e in entries})
         },
+        # Simplified geometry for the map. Carries geo_id only — the site joins
+        # values at render time, so geometry never rebuilds for new data.
+        "boundaries": {
+            g: f"{base_url.rstrip('/')}/{config.boundaries_key(g)}"
+            for g in sorted({e["geography"] for e in entries})
+        },
         "datasets": datasets,
         "aggregation": reg["aggregation"],
         # Per-year partitions: the right shape for single-year queries and bulk

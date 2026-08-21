@@ -269,6 +269,15 @@ geographies:
     # Populated cells almost always fall inside one, so a short snap is
     # reasonable, but coverage is not guaranteed complete.
     complete_coverage: false
+    # 33,791 small polygons: at the default 0.005 the GeoJSON is 30 MB, which is
+    # too much to hand a browser. 0.01 brings it to ~5.6 MB gzipped. That is
+    # still the heaviest layer by far, and it only loads if a user picks ZCTA
+    # and opens the map. Proper vector tiles are the real fix; this is the best
+    # available without a tiling toolchain.
+    simplify_tolerance: 0.01
+    map_note: >-
+      ZIP Code Tabulation Areas render coarsely on the national map. They are
+      most useful zoomed in, or through the table and downloads.
     tiger_url: https://www2.census.gov/geo/tiger/TIGER2024/ZCTA520/tl_2024_us_zcta520.zip
     id_field: GEOID20
     name_field: GEOID20

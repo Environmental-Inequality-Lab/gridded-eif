@@ -148,3 +148,39 @@ table.data tbody tr:hover { background: var(--surface-inset); }
        background: none; border: none; border-bottom: 2px solid transparent; color: var(--ink-muted); }
 .tab:hover { color: var(--ink); }
 .tab.on { color: var(--brand-deep); border-bottom-color: var(--brand-accent); }
+
+/* ---------- map ---------- */
+.map-wrap { position: relative; height: 560px; border: 1px solid var(--line);
+  border-radius: 10px; overflow: hidden; background: var(--bg-soft); }
+/* Two classes deliberately. MapLibre puts a `maplibregl-map` class on this
+   element and its stylesheet is injected after ours, so a single-class rule
+   loses the tie and the element collapses to height 0. */
+.map-wrap .map { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map-overlay { position: absolute; inset: 0; display: grid; place-items: center;
+  background: rgba(255,255,255,.86); z-index: 2; padding: 24px; }
+
+/* Follows the cursor, so it must never intercept pointer events or the
+   feature underneath would stop receiving mousemove and the tooltip would
+   flicker as it chased itself. */
+.map-tip { position: absolute; z-index: 3; pointer-events: none;
+  background: #fff; border: 1px solid var(--line); border-radius: 7px;
+  padding: 7px 10px; box-shadow: var(--shadow); font-size: .84rem;
+  display: flex; flex-direction: column; gap: 1px; max-width: 260px; }
+.map-tip strong { font-weight: 600; }
+.map-tip span { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.map-legend { position: absolute; left: 14px; bottom: 14px; z-index: 3;
+  background: rgba(255,255,255,.95); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; box-shadow: var(--shadow); width: 232px; }
+.map-legend-label { font-size: .74rem; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.map-legend-bar { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  height: 10px; border-radius: 3px; overflow: hidden; }
+.map-legend-ends { display: flex; justify-content: space-between; margin-top: 4px;
+  font-size: .76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.map-legend-note { font-size: .72rem; color: var(--muted); margin-top: 6px; }
+
+@media (max-width: 800px) {
+  .map-wrap { height: 420px; }
+  .map-legend { width: auto; right: 14px; }
+}

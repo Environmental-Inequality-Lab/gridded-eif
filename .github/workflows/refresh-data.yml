@@ -91,6 +91,11 @@ jobs:
       - name: Build name lookups
         run: geif names --geography "${{ inputs.geography }}"
 
+      # Simplified boundary geometry for the map. Values join at render time,
+      # so this is independent of the data partitions.
+      - name: Build map boundaries
+        run: geif boundaries --geography "${{ inputs.geography }}"
+
       - name: Build all-years files
         run: |
           geif combine \
