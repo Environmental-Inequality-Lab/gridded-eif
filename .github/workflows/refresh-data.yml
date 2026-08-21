@@ -52,14 +52,24 @@ jobs:
       - name: Install
         run: pip install -e .
 
-      # TIGER/Line shapefiles are ~85 MB per level and change roughly annually.
-      # The runner is ephemeral, so without this every run re-downloads them.
-      - name: Cache TIGER boundaries
+      # .cache holds TIGER shapefiles (~85 MB per level) and the built
+      # crosswalks. The runner is ephemeral, so without this every run
+      # re-downloads and re-joins.
+      #
+      # The key must not contain the raw geography input — it can be a
+      # comma-separated list, and Actions rejects commas in cache keys.
+      # Instead the key is content-addressed on the pipeline and registry, so
+      # any change to crosswalk logic or geography definitions starts a fresh
+      # cache rather than restoring stale crosswalks. run_id makes each save
+      # unique, and restore-keys picks up the most recent compatible cache, so
+      # levels accumulate across runs instead of overwriting each other.
+      - name: Cache boundaries and crosswalks
         uses: actions/cache@v4
         with:
           path: .cache
-          key: tiger-2024-${{ inputs.geography }}
-          restore-keys: tiger-2024-
+          key: geif-cache-${{ hashFiles('pipeline/**', 'catalog/variables.yaml') }}-${{ github.run_id }}
+          restore-keys: |
+            geif-cache-${{ hashFiles('pipeline/**', 'catalog/variables.yaml') }}-
 
       # `geif build` validates each source file against the pinned contract
       # before aggregating it, and resolves the whole year plan up front so a
