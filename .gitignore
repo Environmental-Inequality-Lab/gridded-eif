@@ -104,6 +104,7 @@ prototype/*.parquet
 # data update required a site redeploy, defeating the whole design.
 # (Note: '#' only starts a comment at the START of a line in .gitignore.)
 site/catalog.json
+site/catalog-*.json
 
 # Editor/agent tooling — local, and settings files here can carry machine
 # paths and permissions. How to run the site locally is documented in README

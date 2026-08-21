@@ -104,7 +104,6 @@ select:hover, input:hover { border-color: var(--ink-faint); }
         border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink-muted); transition: .12s ease; }
 .chip:hover { border-color: var(--brand-accent); color: var(--ink); }
 .chip.on { background: var(--brand-deep); border-color: var(--brand-deep); color: #fff; }
-:root[data-theme="dark"] .chip.on, :root:not([data-theme="light"]) .chip.on { color: #14171c; }
 .chip.residual { font-style: italic; }
 
 /* ---------- table ---------- */

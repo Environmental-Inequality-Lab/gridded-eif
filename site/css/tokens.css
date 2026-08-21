@@ -12,6 +12,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Anton&family=League+Gothic&family=Lato:ital,wght@0,300;0,400;0,700;1,400&display=swap');
 
 :root {
+  /* Light only, deliberately. `color-scheme` also keeps form controls and
+     scrollbars light when the OS is set to dark — without it the browser
+     renders native widgets dark against a light page. */
+  color-scheme: light;
+
   /* ---------- brand ---------- */
   /* Values taken from population-explorer's styles.css, which is the EIL brand
      file. Note: an earlier draft used #eb6864 as the accent — that is the
@@ -72,58 +77,4 @@
   --link:       var(--brand-deep);
   --link-hover: var(--brand-accent-600);
   --focus-ring: var(--brand-accent);
-}
-
-/* Dark theme. Only tokens are redefined — never component rules.
-   Guarded so an explicit light choice always wins. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ink:       #e7e9ee;
-    --ink-muted: #a4adba;
-    --ink-faint: #7d8694;
-    --surface:       #14171c;
-    --surface-soft:  #1a1e25;
-    --surface-tint:  #212630;
-    --surface-inset: #191d24;
-    --line:        #2b313b;
-    --line-strong: #3d4552;
-
-    /* Brand maroon fails contrast on a dark surface, so headings use a
-       lightened tint while the header keeps the true brand colour. */
-    --brand-deep:     #e0a3a0;
-    --brand-deep-050: #241416;
-    --brand-accent:   #d98682;
-    --brand-accent-600:#c4706c;
-    --brand-accent-050:#2a1516;
-
-    --data-1: #6aa8d4; --data-2: #e28a52; --data-3: #74b183;
-    --data-4: #b183c9; --data-5: #cfa85e; --data-6: #9aa2ad;
-    --data-seq-0: #1a222c; --data-seq-1: #24384a; --data-seq-2: #2f5170;
-    --data-seq-3: #3d6f97; --data-seq-4: #5891bb; --data-seq-5: #86b4d6;
-
-    --warn-bg: #2b2415;
-    --info-bg: #16202b;
-    --header-bg: #4a0e10;
-    --link: #e8a5a2;
-
-    --shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
-    --shadow-lg: 0 2px 4px rgba(0,0,0,.35), 0 18px 44px rgba(0,0,0,.45);
-  }
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --ink: #e7e9ee; --ink-muted: #a4adba; --ink-faint: #7d8694;
-  --surface: #14171c; --surface-soft: #1a1e25; --surface-tint: #212630;
-  --surface-inset: #191d24; --line: #2b313b; --line-strong: #3d4552;
-  --brand-deep: #e0a3a0; --brand-deep-050: #241416;
-  --brand-accent: #d98682; --brand-accent-600: #c4706c; --brand-accent-050: #2a1516;
-  --data-1: #6aa8d4; --data-2: #e28a52; --data-3: #74b183;
-  --data-4: #b183c9; --data-5: #cfa85e; --data-6: #9aa2ad;
-  --data-seq-0: #1a222c; --data-seq-1: #24384a; --data-seq-2: #2f5170;
-  --data-seq-3: #3d6f97; --data-seq-4: #5891bb; --data-seq-5: #86b4d6;
-  --warn-bg: #2b2415; --info-bg: #16202b;
-  --header-bg: #4a0e10; --link: #e8a5a2;
-  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
-  --shadow-lg: 0 2px 4px rgba(0,0,0,.35), 0 18px 44px rgba(0,0,0,.45);
 }

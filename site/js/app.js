@@ -54,9 +54,20 @@ function App() {
   }, [state.v]);
 
   if (err) {
-    return html`<div class="wrap section">
-      <${Notice} kind="warn"><strong>Could not load the data catalog.</strong> ${err}<//>
-    </div>`;
+    return html`
+      <${Header} view=${state.v} go=${go} />
+      <main class="wrap section">
+        <p class="eyebrow">Something went wrong</p>
+        <h1>Data unavailable</h1>
+        <${Notice} kind="warn">
+          <strong>Could not load the data catalog.</strong> ${err}
+        <//>
+        <p class="small muted" style="margin-top:16px">
+          The data files themselves are unaffected and can be downloaded directly
+          from the <a href=${SITE.repo}>repository</a> or the
+          <a href="https://www2.census.gov/ces/gridded_eif/">Census file directory</a>.
+        </p>
+      </main>`;
   }
   if (!cat) {
     return html`<div class="wrap section"><${Spinner} label="Loading catalog…" /></div>`;
@@ -94,4 +105,28 @@ function labelFor(id, level) {
   return id;
 }
 
-render(html`<${App} />`, document.getElementById('app'));
+function Boundary({ children }) {
+  const [crash, setCrash] = useState(null);
+  useEffect(() => {
+    const onErr = (e) => setCrash(String(e.reason?.message || e.message || e.reason || e));
+    window.addEventListener('unhandledrejection', onErr);
+    window.addEventListener('error', onErr);
+    return () => {
+      window.removeEventListener('unhandledrejection', onErr);
+      window.removeEventListener('error', onErr);
+    };
+  }, []);
+  if (!crash) return children;
+  return html`
+    <main class="wrap section">
+      <p class="eyebrow">Something went wrong</p>
+      <h1>This page failed to load</h1>
+      <${Notice} kind="warn">${crash}<//>
+      <p class="small muted" style="margin-top:16px">
+        Please <a href=${SITE.repo + '/issues'}>report this</a> with the page address.
+        The underlying data files are unaffected.
+      </p>
+    </main>`;
+}
+
+render(html`<${Boundary}><${App} /><//>`, document.getElementById('app'));
