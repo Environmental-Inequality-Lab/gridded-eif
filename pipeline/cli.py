@@ -120,6 +120,30 @@ def build(
 
 
 @app.command()
+def combine(
+    geography: str = typer.Option(None, "--geography", help="Default: every level built"),
+    dataset: str = typer.Option(None, "--dataset", help="Default: all enabled datasets"),
+    base_url: str = typer.Option(None, "--base-url", envvar="GEIF_BASE_URL"),
+) -> None:
+    """Build all-years files from the per-year partitions already on disk.
+
+    Cheap — reads local Parquet, never the source data.
+    """
+    names = dataset.split(",") if dataset else list(config.datasets())
+    if geography:
+        levels = [g.strip() for g in geography.split(",")]
+    else:
+        led = BUILD_DIR / "_ledger"
+        levels = sorted({p.parent.name for p in led.rglob("*.json") if p.parent.name != "_combined"})
+    # Pull the published catalog so years not rebuilt in this run are included
+    # from the CDN rather than silently dropped.
+    published = catalog_mod.fetch_published(base_url) if base_url else None
+    for name in names:
+        for level in levels:
+            aggregate.combine(name, level, published=published)
+
+
+@app.command()
 def catalog(
     base_url: str = typer.Option(..., "--base-url", envvar="GEIF_BASE_URL"),
     merge_published: bool = typer.Option(
@@ -131,12 +155,20 @@ def catalog(
     """Regenerate catalog.json, preserving partitions built elsewhere."""
     parts = []
     for led in sorted((BUILD_DIR / "_ledger").rglob("*.json")):
+        if "_combined" in led.parts:      # those are Combined, not Partition
+            continue
         parts.append(aggregate.Partition(**json.loads(led.read_text())))
     if not parts:
         raise typer.BadParameter("nothing built yet — run `geif build` first")
 
+    combined = []
+    combined_dir = BUILD_DIR / "_ledger" / "_combined"
+    if combined_dir.exists():
+        for led in sorted(combined_dir.glob("*.json")):
+            combined.append(aggregate.Combined(**json.loads(led.read_text())))
+
     published = catalog_mod.fetch_published(base_url) if merge_published else None
-    cat = catalog_mod.build(parts, base_url, merge_with=published)
+    cat = catalog_mod.build(parts, base_url, merge_with=published, combined=combined)
     path = catalog_mod.write(cat, BUILD_DIR / catalog_mod.CATALOG_FILENAME)
 
     carried = len(cat["entries"]) - len(parts)
@@ -144,7 +176,8 @@ def catalog(
         f"[green]{path.name}[/green]: {len(cat['entries'])} partitions "
         f"({len(parts)} built here"
         + (f", {carried} carried from the published catalog" if carried > 0 else "")
-        + f"), {len(cat['datasets'])} datasets, {path.stat().st_size / 1024:.1f} KB"
+        + f"), {len(cat['combined'])} all-years files, "
+        f"{len(cat['datasets'])} datasets, {path.stat().st_size / 1024:.1f} KB"
     )
 
 
@@ -182,6 +215,7 @@ def refresh(
         skip_validation=skip_validation,
         force=False,
     )
+    combine(geography=geography, dataset=None, base_url=base_url)
     catalog(base_url=base_url, merge_published=True)
     if bucket:
         publish(bucket=bucket, distribution_id=distribution_id, dry_run=False)

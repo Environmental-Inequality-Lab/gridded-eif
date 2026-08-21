@@ -149,6 +149,15 @@ def source_url(dataset: str, year: int) -> str:
     return f"{base}/{datasets()[dataset].filename(year)}"
 
 
+def combined_key(dataset: str, geography: str) -> str:
+    """S3 key for the all-years file of one (dataset, geography).
+
+    Sits beside the per-year partitions under the same version prefix, using
+    "all" where a year would go.
+    """
+    return f"derived/{DERIVED_VERSION}/{dataset}/{geography}/all/part-00.parquet"
+
+
 def parse_years(spec: str, dataset: str | None = None) -> list[int]:
     """Parse a year specification into a sorted list.
 

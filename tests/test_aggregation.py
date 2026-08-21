@@ -147,3 +147,64 @@ def test_geography_unit_counts_are_plausible(all_levels):
             f"SELECT count(DISTINCT geo_id) FROM read_parquet('{path.as_posix()}')"
         ).fetchone()[0]
         assert n == expected[level], f"{level}: {n} units, expected {expected[level]}"
+
+
+@pytest.fixture(scope="module")
+def combined_county() -> Path:
+    path = config.REPO_ROOT / ".build" / config.combined_key("ageracesex", "county")
+    if not path.exists():
+        pytest.skip("run `geif combine --geography county` first")
+    return path
+
+
+def test_combined_file_matches_its_per_year_partitions(combined_county):
+    """The all-years file must be a faithful concatenation.
+
+    It exists purely as a latency optimisation — a 25-year national series reads
+    66 KB across 25 files and takes ~5s in a browser, dominated by per-file round
+    trips. An optimisation that changed the numbers would be far worse than the
+    latency it saves, so every year present locally is checked against its
+    source partition.
+    """
+    con = duckdb.connect()
+    years = [
+        r[0] for r in con.execute(
+            f"SELECT DISTINCT year FROM read_parquet('{combined_county.as_posix()}') ORDER BY 1"
+        ).fetchall()
+    ]
+    assert len(years) >= 2, "combined file should span multiple years"
+
+    checked = 0
+    for year in years:
+        per_year = config.REPO_ROOT / ".build" / config.derived_key("ageracesex", "county", year)
+        if not per_year.exists():
+            continue  # that year came from the CDN, not rebuilt locally
+        a = con.execute(
+            f"SELECT round(sum(n_noise)) FROM read_parquet('{combined_county.as_posix()}') "
+            f"WHERE year = {year}"
+        ).fetchone()[0]
+        b = con.execute(
+            f"SELECT round(sum(n_noise)) FROM read_parquet('{per_year.as_posix()}')"
+        ).fetchone()[0]
+        assert a == b, f"{year}: combined {a:,.0f} != per-year {b:,.0f}"
+        checked += 1
+    assert checked, "no locally built years available to compare"
+
+
+def test_combined_file_stays_prunable(combined_county):
+    """Sorting by geo_id must survive concatenation.
+
+    Without it the combined file would trade one problem for another: a single
+    round trip, but scanning tens of megabytes to answer a one-county question.
+    """
+    con = duckdb.connect()
+    groups = con.execute(f"""
+        SELECT row_group_id, min(stats_min) lo, max(stats_max) hi
+        FROM parquet_metadata('{combined_county.as_posix()}')
+        WHERE path_in_schema = 'geo_id' GROUP BY 1
+    """).df()
+    hits = groups[(groups.lo <= "26163") & (groups.hi >= "26163")]
+    assert len(groups) > 10, "too few row groups for pruning to help"
+    assert len(hits) / len(groups) < 0.1, (
+        f"one county touches {len(hits)}/{len(groups)} row groups — sort order lost"
+    )

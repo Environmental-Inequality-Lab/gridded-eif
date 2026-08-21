@@ -56,6 +56,16 @@ def fetch_published(base_url: str, timeout: int = 30) -> dict | None:
     return None
 
 
+def _merge_combined(existing: list[dict], fresh: list[dict]) -> list[dict]:
+    """Union of published and freshly built all-years files, newest winning."""
+    def key(e):
+        return (e["dataset"], e["geography"])
+
+    merged = {key(e): e for e in existing}
+    merged.update({key(e): e for e in fresh})
+    return sorted(merged.values(), key=key)
+
+
 def _merge_entries(existing: list[dict], fresh: list[dict]) -> list[dict]:
     """Union of published and newly built partitions, newest build winning."""
     def key(e):
@@ -70,6 +80,7 @@ def build(
     partitions: list[Partition],
     base_url: str,
     merge_with: dict | None = None,
+    combined: list | None = None,
 ) -> dict:
     reg = config.registry()
 
@@ -109,8 +120,25 @@ def build(
             "geographies": sorted({e["geography"] for e in mine}),
         }
 
+    fresh_combined = [
+        {
+            "dataset": c.dataset,
+            "geography": c.geography,
+            "url": f"{base_url.rstrip('/')}/{c.path}",
+            "years": c.years,
+            "rows": c.rows,
+            "bytes": c.bytes,
+            "sha256": c.sha256,
+            "pipeline_version": c.pipeline_version,
+        }
+        for c in (combined or [])
+    ]
+    combined_entries = _merge_combined(
+        (merge_with or {}).get("combined", []), fresh_combined
+    )
+
     return {
-        "catalog_version": "1.0.0",
+        "catalog_version": "1.1.0",
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "pipeline_version": __version__,
         "registry_version": reg["registry_version"],
@@ -126,7 +154,14 @@ def build(
         "grid": reg["grid"],
         "datasets": datasets,
         "aggregation": reg["aggregation"],
+        # Per-year partitions: the right shape for single-year queries and bulk
+        # download, and the unit the pipeline builds incrementally.
         "entries": entries,
+        # All-years files: one per (dataset, geography). Multi-year query
+        # latency is dominated by per-file round trips rather than bytes — a
+        # 25-year national series reads 66 KB across 25 files and takes ~5s in a
+        # browser. Clients doing a time series should read these instead.
+        "combined": combined_entries,
     }
 
 

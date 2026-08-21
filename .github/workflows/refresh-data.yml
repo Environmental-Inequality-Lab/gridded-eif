@@ -80,6 +80,18 @@ jobs:
             --geography "${{ inputs.geography }}" \
             --year "${{ inputs.year }}"
 
+      # Multi-year query latency is dominated by per-file round trips, not
+      # bytes — a 25-year national series reads 66 KB across 25 files and takes
+      # ~5s in a browser. These all-years files collapse that to one request.
+      # --base-url lets it pull years that were not rebuilt in this run straight
+      # from the CDN, so a single-year refresh cannot produce a one-year
+      # "all-years" file.
+      - name: Build all-years files
+        run: |
+          geif combine \
+            --geography "${{ inputs.geography }}" \
+            --base-url "$GEIF_BASE_URL"
+
       - name: Regenerate catalog
         run: geif catalog --base-url "$GEIF_BASE_URL"
 

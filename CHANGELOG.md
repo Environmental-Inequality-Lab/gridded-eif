@@ -24,6 +24,18 @@ Versioning: [SemVer](https://semver.org/spec/v2.0.0.html).
   to a wildcard past 50 objects, which is billed as a single path.
 
 ### Added
+- All-years files (`derived/v1/{dataset}/{geography}/all/`), one per dataset and
+  geography, listed in the catalog's new `combined` array. Multi-year query
+  latency is dominated by per-file round trips rather than bytes: a 25-year
+  national series reads **66 KB spread over 25 files** and took ~5s in a
+  browser. The same data as one 24.7 KB file is a single request.
+  Per-year partitions are kept — they remain the right shape for single-year
+  queries and bulk download, and stay the unit built incrementally.
+- `geif combine`, wired into `refresh` and the workflow. It takes `--base-url`
+  and pulls years not rebuilt in the current run from the published catalog, so
+  a single-year refresh cannot produce a one-year "all-years" file. Same failure
+  mode as the catalog clobbering, and just as invisible — the file would look
+  perfectly valid.
 - `state` and `nation` geography levels. Nation is declared as a `constant`
   source — every cell maps to one id — which keeps a single aggregation path
   instead of adding a second one that sums state partitions. Both give the same

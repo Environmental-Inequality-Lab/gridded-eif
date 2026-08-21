@@ -22,6 +22,9 @@ Initial build. Source data version 5.0 (Census).
 
 ### Added
 - `ageracesex` and `raceincome` at county, state, and nation level, 2000–2024.
+- All-years files per dataset and geography, in the catalog's `combined` array.
+  Use these for time series; use the per-year `entries` for a single year or for
+  bulk download. Both contain identical values.
 - Both noise measures (`n_noise`, `n_noise_postprocessed`) in every partition.
 
 ### Known characteristics
