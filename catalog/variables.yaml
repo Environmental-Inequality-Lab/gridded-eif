@@ -68,18 +68,26 @@ dimensions:
 
   age_group:
     label: Age group
-    # Labels are reproduced EXACTLY as they ship. "19-65" leaves 18-year-olds
-    # unaccounted for, while the working paper says "18-64". Unresolved with
-    # the authors, so we do not invent a corrected label.
-    verbatim_from_source: true
-    footnote: >-
-      Age categories are reproduced exactly as published. The published labels
-      leave the placement of 18-year-olds ambiguous; we have not altered them.
+    # The shipped Parquet carries the literal strings "Under 18", "19-65", and
+    # "Over 65". Voorheis et al. (2026, REEP 20(2), p. 315) describe the same
+    # three bins as "under 18, 18-64, and 65+", as does the CES working paper.
+    #
+    # The published wording is used for display because "19-65" is wrong on its
+    # face — it drops 18-year-olds and counts 65 in two bins. The `code` stays
+    # the exact string in the files, so every query, export, and code snippet
+    # still joins correctly. Fixing the labels upstream is a question for the
+    # data's authors.
+    label_source: "Voorheis et al. (2026), Review of Environmental Economics and Policy 20(2), p. 315"
     values:
       - {code: "Under 18",    label: "Under 18"}
-      - {code: "19-65",       label: "19-65"}
-      - {code: "Over 65",     label: "Over 65"}
+      - {code: "19-65",       label: "18–64"}
+      - {code: "Over 65",     label: "65 and over"}
       - {code: "Missing Age", label: "Age not reported", residual: true}
+    footnote: >-
+      Age groups are labelled as described in Voorheis et al. (2026): under 18,
+      18–64, and 65+. The underlying data files use the strings "Under 18",
+      "19-65", and "Over 65" for these same three groups; the codes are shown
+      alongside the labels wherever a query is exported.
 
   sex:
     label: Sex

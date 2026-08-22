@@ -2,8 +2,8 @@ import { html } from '../h.js';
 import { SITE, BASE } from '../config.js';
 
 const NAV = [
-  { v: 'explore', label: 'Query' },
-  { v: 'data', label: 'Data Downloads' },
+  { v: 'explore', label: 'Query Data' },
+  { v: 'data', label: 'Download Data' },
   { v: 'docs', label: 'Documentation' },
 ];
 

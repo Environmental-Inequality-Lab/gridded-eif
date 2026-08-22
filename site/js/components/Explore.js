@@ -37,6 +37,19 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
     return out;
   }, [places, state.g]);
 
+  /* code -> published label, per dimension. The table shows the label; the
+   * query and the CSV keep the code, which is what the source files contain. */
+  const valueLabels = useMemo(() => {
+    const out = {};
+    for (const dimId of ds?.dimensions || []) {
+      const d = dimension(cat, dimId);
+      if (!d) continue;
+      out[dimId] = Object.fromEntries(d.values.map((v) => [v.code, v.label]));
+    }
+    out.geo_id = placeNames;
+    return out;
+  }, [cat, ds, placeNames]);
+
   const groupBy = state.p || state.g === 'nation' ? (ds?.dimensions || []) : ['geo_id'];
   const url = entryUrl(cat, state.d, state.g, year);
   const seriesUrl = combinedUrl(cat, state.d, state.g);
@@ -173,9 +186,10 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
           ${state.tab === 'table' && html`
             <${ResultsTable}
               rows=${display} columns=${columns} labels=${labels}
+              valueLabels=${valueLabels}
               note=${`${cat.measures[measure].label.toLowerCase()} estimates`}
               onExport=${() => exportCsv(display, columns,
-                `gridded-eif_${state.d}_${state.g}_${year}.csv`)} />`}
+                `gridded-eif_${state.d}_${state.g}_${year}.csv`, valueLabels)} />`}
 
           ${state.tab === 'series' && html`
             <div>
@@ -231,7 +245,7 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
               </p>
             </div>`}
 
-          ${state.tab === 'code' && html`<${CodeTab} cat=${cat} url=${url}
+          ${state.tab === 'code' && html`<${CodeTab} valueLabels=${valueLabels} cat=${cat} url=${url}
               seriesUrl=${seriesUrl} measure=${measure} state=${state} year=${year}
               rows=${display} columns=${columns} series=${series} />`}
         </div>
@@ -243,7 +257,7 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
 /* Stable URLs plus copy-paste snippets. This is a headline feature for a
  * research audience, and it makes clear the site is a convenience layer over
  * data people can always reach directly. */
-function CodeTab({ cat, url, seriesUrl, measure, state, year, rows, columns, series }) {
+function CodeTab({ cat, url, seriesUrl, measure, state, year, rows, columns, series, valueLabels }) {
   const [copied, setCopied] = useState(null);
   const filters = Object.entries(state.facets)
     .filter(([, v]) => v?.length)
@@ -268,7 +282,7 @@ function CodeTab({ cat, url, seriesUrl, measure, state, year, rows, columns, ser
         <div class="row">
           <button class="btn btn-primary btn-sm"
                   onClick=${() => exportCsv(rows, columns,
-                    `gridded-eif_${state.d}_${state.g}_${year}.csv`)}>
+                    `gridded-eif_${state.d}_${state.g}_${year}.csv`, valueLabels)}>
             Download CSV
           </button>
           ${series?.length > 1 && html`

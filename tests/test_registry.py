@@ -62,12 +62,25 @@ def test_population_datasets_are_marked_non_joinable():
     assert "ageracesex" in ri["not_joinable_with"]
 
 
-def test_age_labels_are_verbatim():
-    """We reproduce '19-65' exactly as published rather than inventing a
-    corrected label, because the correct one is unconfirmed."""
+def test_age_codes_match_the_data_while_labels_follow_the_article():
+    """Display wording comes from the published article; codes come from the files.
+
+    The shipped Parquet uses "19-65", which is wrong on its face: it drops
+    18-year-olds and counts 65 in two bins. Voorheis et al. (2026, REEP 20(2),
+    p. 315) describe the same three bins as under 18, 18-64, and 65+.
+
+    The distinction matters mechanically, not just editorially — every query,
+    CSV export, and code snippet filters on `code`, so changing it to match the
+    label would silently return nothing.
+    """
     age = config.registry()["dimensions"]["age_group"]
-    assert age["verbatim_from_source"] is True
-    assert {v["code"] for v in age["values"]} >= {"Under 18", "19-65", "Over 65"}
+    codes = {v["code"] for v in age["values"]}
+    labels = {v["label"] for v in age["values"]}
+
+    assert codes >= {"Under 18", "19-65", "Over 65"}, "codes must match the data files"
+    assert "18–64" in labels and "19-65" not in labels
+    assert "65 and over" in labels
+    assert age.get("label_source"), "a corrected label needs its source cited"
     assert age["footnote"]
 
 

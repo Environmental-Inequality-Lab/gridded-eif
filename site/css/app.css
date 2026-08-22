@@ -184,3 +184,40 @@ table.data tbody tr:hover { background: var(--surface-inset); }
   .map-wrap { height: 420px; }
   .map-legend { width: auto; right: 14px; }
 }
+
+/* ---------- hero ---------- */
+/* Two columns so the headline gets a full line and the lattice fills what was
+   dead space. Collapses to one column before the text gets cramped. */
+/* The text column is the wider of the two. The mark is decoration and should
+   never be the reason the headline breaks. */
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.32fr) minmax(0, 0.68fr);
+  gap: 40px; align-items: center; }
+
+/* Sized to sit on one line at desktop widths, but allowed to wrap. `nowrap`
+   would overflow the column instead of wrapping — the title is wider than its
+   column at every width once the font hits the clamp ceiling, so it would
+   simply run under the mark. */
+.hero-title { font-size: clamp(1.9rem, 3.6vw, 3rem); line-height: 1.05;
+  margin: 0 0 .6rem; max-width: none; text-wrap: balance; }
+
+.lattice { width: 100%; height: auto; display: block; overflow: visible; }
+.lattice circle { fill: var(--brand); opacity: .16;
+  animation: lattice-drift 9s ease-in-out infinite; }
+
+@keyframes lattice-drift {
+  0%, 100% { opacity: .10; }
+  50%      { opacity: .34; }
+}
+
+/* The mark is decorative; motion should never be the reason someone cannot use
+   the page. Static, still legible as a lattice. */
+@media (prefers-reduced-motion: reduce) {
+  .lattice circle { animation: none; opacity: .2; }
+}
+
+/* Below this the two columns start squeezing the prose, so the mark goes and
+   the text takes the full width. */
+@media (max-width: 1000px) {
+  .hero-grid { grid-template-columns: 1fr; gap: 24px; }
+  .hero-art { display: none; }
+}

@@ -34,7 +34,7 @@ function App() {
     return () => { cancelled = true; };
   }, [cat]);
 
-  const TITLES = { explore: 'Query', data: 'Data Downloads', docs: 'Documentation' };
+  const TITLES = { explore: 'Query Data', data: 'Download Data', docs: 'Documentation' };
   useEffect(() => {
     document.title = state.v === 'home' ? SITE.name
       : `${TITLES[state.v] || state.v} · ${SITE.name}`;

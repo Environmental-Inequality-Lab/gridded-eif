@@ -1,6 +1,6 @@
 import { html, useState, useMemo } from '../h.js';
-import { datasets, geographies } from '../catalog.js';
-import { count } from '../format.js';
+import { datasets } from '../catalog.js';
+import { Lattice } from './Lattice.js';
 
 /* Search-first landing.
  *
@@ -27,26 +27,26 @@ export function Landing({ cat, go, places }) {
     return out.slice(0, 10);
   }, [term, places, cat]);
 
-  const totalRows = cat.entries.reduce((s, e) => s + e.rows, 0);
-  const years = cat.datasets.ageracesex?.years || [];
-
-  const starts = [
-    { label: 'Population by race, by county', patch: { v: 'explore', d: 'ageracesex', g: 'county' } },
-    { label: 'Income distribution by state', patch: { v: 'explore', d: 'raceincome', g: 'state' } },
-    { label: 'National trends since 2000', patch: { v: 'explore', d: 'ageracesex', g: 'nation', tab: 'series' } },
-    { label: 'Download files', patch: { v: 'data' } },
-  ];
+  // Driven by the catalog, so publishing a dataset surfaces it here with no
+  // code change.
+  const starts = datasets(cat).map((d) => ({
+    label: d.label,
+    patch: { v: 'explore', d: d.id, g: 'county' },
+  }));
 
   return html`
     <div>
       <section class="section" style="padding-top:56px">
         <div class="wrap">
+          <div class="hero-grid">
+            <div>
           <p class="eyebrow">U.S. Census Bureau experimental data product</p>
-          <h1 style="max-width:22ch">Explore Gridded EIF Data</h1>
+          <h1 class="hero-title">Explore Gridded EIF Data</h1>
           <p class="lead">
-            Population counts by age, race, sex, and household income, aggregated
-            from the 0.01° Gridded Environmental Impacts Frame to standard
-            geographies.
+            A publicly accessible data product that aggregates the Census
+            Environmental Impacts Frame in ways that preserve privacy and maintain
+            analytical consistency — counts of the population by race and ethnicity,
+            sex, and age, and by race/ethnicity and household income decile.
           </p>
 
           <div style="max-width:640px;margin-top:28px;position:relative">
@@ -80,27 +80,47 @@ export function Landing({ cat, go, places }) {
               <button class="btn btn-outline btn-sm" onClick=${() => go(s.patch)}>${s.label}</button>
             `)}
           </div>
+            </div>
+
+            <div class="hero-art"><${Lattice} /></div>
+          </div>
         </div>
       </section>
 
       <section class="section section-soft">
         <div class="wrap">
+          <p class="eyebrow">Why gridded data</p>
           <div class="grid3">
             <div>
-              <h3>${years.length ? `${years[0]}–${years[years.length - 1]}` : '—'}</h3>
-              <p class="small muted">Annual coverage, derived from administrative records.</p>
+              <h3>Intersectional</h3>
+              <p class="small muted">
+                The data enable distributional analysis by intersectional
+                characteristics, such as by race <em>and</em> income — not one
+                dimension at a time.
+              </p>
             </div>
             <div>
-              <h3>${geographies(cat).map((g) => g.label).join(' · ')}</h3>
-              <p class="small muted">Each geography is aggregated independently from the
-              same grid cells; totals reconcile across levels.</p>
+              <h3>Timely</h3>
+              <p class="small muted">
+                The underlying administrative records are updated more frequently
+                than most aggregate demographic data. American Community Survey
+                5-year tables draw on survey responses from several years back.
+              </p>
             </div>
             <div>
-              <h3 class="num">${count(totalRows)}</h3>
-              <p class="small muted">Rows published, queried in the browser directly from
-              the underlying Parquet files.</p>
+              <h3>Flexible</h3>
+              <p class="small muted">
+                Most individuals in the frame are geocoded to precise latitude and
+                longitude, allowing aggregation to any geographic unit — not only
+                those the Census Bureau defines.
+              </p>
             </div>
           </div>
+          <p class="small muted" style="margin-top:20px;max-width:74ch">
+            Aggregating to units of fixed size, such as a geographic grid, rather
+            than fixed population, such as census tracts, can help when analysing
+            hazards that do not align with administrative boundaries.
+          </p>
         </div>
       </section>
 
@@ -108,20 +128,23 @@ export function Landing({ cat, go, places }) {
         <div class="wrap">
           <div class="grid2">
             <div class="card">
-              <h3>Two estimate versions</h3>
+              <h3>Noise infusion</h3>
               <p class="small muted">
-                Each count is published in two versions, which differ in how the
-                infused noise is handled. The appropriate version depends on the size
-                of the geography being analysed. This site selects a default and
-                reports which is in use.
+                Grid points represent very small geographic locations, so a small
+                amount of noise is added to each statistic. It can be thought of as
+                "on the order of rounding" — a degree of coarsening similar to the
+                rounding schemes used for official Census tabulations. The noise
+                typically nets out when aggregating grid points to larger
+                geographies.
               </p>
             </div>
             <div class="card">
-              <h3>Disclosure avoidance</h3>
+              <h3>Two published counts</h3>
               <p class="small muted">
-                Counts are protected by noise infusion to preserve confidentiality.
-                The noise averages out under aggregation, so estimates are published
-                at standard geographies rather than at the native grid resolution.
+                Both raw noisy counts and postprocessed counts are provided,
+                allowing users to apply alternative postprocessing algorithms if
+                they wish. This site selects a default by the size of the geography
+                and reports which is in use.
               </p>
             </div>
           </div>

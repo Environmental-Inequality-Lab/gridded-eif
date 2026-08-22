@@ -7,7 +7,11 @@ import { count, compact, toCsv, download } from '../format.js';
  * people to think data is missing; marking trains them to think about
  * uncertainty, which is the actual situation with privacy-infused counts.
  */
-export function ResultsTable({ rows, columns, labels, onExport, note }) {
+/* `valueLabels` maps a column to a code->label lookup, so the table can show
+ * published wording while the underlying value stays the code the data uses.
+ * The CSV deliberately keeps codes: an export exists to be joined back to the
+ * source files, and a relabelled value would not match them. */
+export function ResultsTable({ rows, columns, labels, valueLabels, onExport, note }) {
   const [sort, setSort] = useState({ col: 'value', asc: false });
   const [compact_, setCompact] = useState(false);
 
@@ -55,10 +59,11 @@ export function ResultsTable({ rows, columns, labels, onExport, note }) {
                 ${columns.map((c) => {
                   const v = r[c];
                   const numeric = typeof v === 'number';
+                  const shown = numeric ? v : (valueLabels?.[c]?.[v] ?? v);
                   const small = c === 'value' && numeric && Math.abs(v) < 100;
                   return html`<td class=${numeric ? 'n' : ''}
                                   title=${small ? 'Small count — privacy noise is large relative to this value' : ''}>
-                    ${numeric ? count(v) : (v ?? '—')}${small ? html` <span class="tag">small</span>` : ''}
+                    ${numeric ? count(v) : (shown ?? '—')}${small ? html` <span class="tag">small</span>` : ''}
                   </td>`;
                 })}
               </tr>`)}
@@ -129,6 +134,29 @@ export function TimeSeries({ series, label, preliminaryYears = [] }) {
   `;
 }
 
-export function exportCsv(rows, columns, filename) {
-  download(filename, toCsv(rows, columns));
+/* Emits both the code and the published label for any dimension where they
+ * differ. Codes alone would confuse anyone comparing the file to the screen —
+ * the site shows "18-64" where the data stores "19-65". Labels alone would
+ * break a join back to the source Parquet, which is the point of publishing
+ * stable file URLs. Both columns costs a little width and cannot be wrong. */
+export function exportCsv(rows, columns, filename, valueLabels) {
+  const cols = [];
+  for (const c of columns) {
+    cols.push(c);
+    const map = valueLabels?.[c];
+    if (map && rows.some((r) => map[r[c]] !== undefined && map[r[c]] !== r[c])) {
+      cols.push(`${c}_label`);
+    }
+  }
+  const expanded = rows.map((r) => {
+    const out = { ...r };
+    for (const c of cols) {
+      if (c.endsWith('_label')) {
+        const base = c.slice(0, -'_label'.length);
+        out[c] = valueLabels?.[base]?.[r[base]] ?? r[base];
+      }
+    }
+    return out;
+  });
+  download(filename, toCsv(expanded, cols));
 }
