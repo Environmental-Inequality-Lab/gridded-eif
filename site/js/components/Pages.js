@@ -1,5 +1,5 @@
 import { html, useState } from '../h.js';
-import { count } from '../format.js';
+import { count, bytes } from '../format.js';
 import { Notice } from './Chrome.js';
 
 /* Bulk downloads. Our aggregates are hosted; the raw 0.01° grid is linked to
@@ -9,7 +9,7 @@ export function DataPage({ cat }) {
   const [ds, setDs] = useState(Object.keys(cat.datasets)[0]);
   const entries = cat.entries.filter((e) => e.dataset === ds);
   const combined = (cat.combined || []).filter((c) => c.dataset === ds);
-  const totalMB = entries.reduce((s, e) => s + e.bytes, 0) / 1e6;
+  const totalBytes = entries.reduce((s, e) => s + e.bytes, 0);
 
   return html`
     <div class="wrap section">
@@ -42,7 +42,7 @@ export function DataPage({ cat }) {
                     <td>${cat.geographies[c.geography]?.label || c.geography}</td>
                     <td class="n">${c.years[0]}–${c.years[c.years.length - 1]}</td>
                     <td class="n">${count(c.rows)}</td>
-                    <td class="n">${(c.bytes / 1e6).toFixed(1)} MB</td>
+                    <td class="n">${bytes(c.bytes)}</td>
                     <td><a href=${c.url}>Download</a></td>
                   </tr>`)}
               </tbody>
@@ -53,7 +53,7 @@ export function DataPage({ cat }) {
       <div class="card">
         <div class="spread">
           <h3 style="margin:0">By year</h3>
-          <span class="small muted">${count(entries.length)} files · ${totalMB.toFixed(1)} MB</span>
+          <span class="small muted">${count(entries.length)} files · ${bytes(totalBytes)}</span>
         </div>
         <div class="table-scroll" style="max-height:420px;overflow-y:auto;margin-top:10px">
           <table class="data">
@@ -64,7 +64,7 @@ export function DataPage({ cat }) {
                   <td>${cat.geographies[e.geography]?.label || e.geography}</td>
                   <td class="n">${e.year}${e.preliminary ? html` <span class="prelim">prelim</span>` : ''}</td>
                   <td class="n">${count(e.rows)}</td>
-                  <td class="n">${(e.bytes / 1e6).toFixed(2)} MB</td>
+                  <td class="n">${bytes(e.bytes)}</td>
                   <td><a href=${e.url}>Download</a></td>
                 </tr>`)}
             </tbody>
@@ -108,7 +108,7 @@ export function DocsPage({ cat }) {
           <p class="small muted" style="margin:0">Recommended when ${m.recommended_when}.</p>
         </div>`)}
       <p class="small muted">
-        This site defaults by geography size, at a threshold of
+        This site defaults by geography size, at a threshold of${' '}
         ${cat.measure_selection_population_threshold?.toLocaleString()} people, and shows
         which version is in use. Never mix the two in one table — they are different
         estimators of the same quantity.

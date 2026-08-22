@@ -56,16 +56,16 @@ export function Footer({ cat }) {
             <strong>Citation</strong>
             <p class="small" style="margin:.4rem 0">
               John Voorheis, Jonathan Colmer, Kendall Houghton, Eva Lyubich, Mary Munro,
-              Cameron Scalera, Jennifer Withrow, The Census Environmental Impacts Frame,
+              Cameron Scalera, Jennifer Withrow, The Census Environmental Impacts Frame,${' '}
               <em>Review of Environmental Economics and Policy</em>, 20, 2, (304–312), (2026).
             </p>
             <p class="small muted" style="margin:0">
-              Data accessed from the ${SITE.name}
+              Data accessed from the ${SITE.name}${' '}
               (${SITE.org}), ${cat ? String(cat.generated_at).slice(0, 10) : ''}.
             </p>
             ${cat && html`
               <div class="muted" style="margin-top:.6rem">
-                Data v${cat.derived_version} · pipeline ${cat.pipeline_version} ·
+                Data ${cat.derived_version} · pipeline ${cat.pipeline_version} ·
                 updated ${String(cat.generated_at).slice(0, 10)}
               </div>`}
           </div>

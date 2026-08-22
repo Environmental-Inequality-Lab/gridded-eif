@@ -48,3 +48,13 @@ export function download(filename, text, mime = 'text/csv;charset=utf-8') {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/** File size with a unit that suits the magnitude. Fixed-MB formatting renders
+ *  a 26 KB file as "0.0 MB", which reads as empty rather than small. */
+export function bytes(v) {
+  if (v == null || Number.isNaN(v)) return '—';
+  if (v >= 1e9) return one.format(v / 1e9) + ' GB';
+  if (v >= 1e6) return one.format(v / 1e6) + ' MB';
+  if (v >= 1e3) return int.format(Math.round(v / 1e3)) + ' KB';
+  return int.format(v) + ' B';
+}

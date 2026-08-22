@@ -150,15 +150,6 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
           <//>
         </div>`}
 
-      ${cat.geographies[state.g]?.complete_coverage === false && html`
-        <div style="margin-bottom:14px">
-          <${Notice}>
-            ${cat.geographies[state.g].caveat ||
-              `${cat.geographies[state.g].label} units do not cover the entire country;
-               totals will fall short of the national figure.`}
-          <//>
-        </div>`}
-
       ${err && html`<div style="margin-bottom:14px"><${Notice} kind="warn">${err}<//></div>`}
 
       <div class="workbench">
