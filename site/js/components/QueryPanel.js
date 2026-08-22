@@ -1,11 +1,11 @@
 import { html } from '../h.js';
-import { dimension, yearsFor, isPreliminary, datasets, geographies } from '../catalog.js';
+import { dimension, yearsFor, isPreliminary, datasets, geographies, defaultMeasure } from '../catalog.js';
 
 /* The query panel. Dataset comes first deliberately: the two population
  * datasets are separate tabulations of the same people and cannot be crossed
  * on demographics — there is no age-by-income. Choosing the dataset first makes
  * the impossible query unreachable instead of an error message. */
-export function QueryPanel({ cat, state, go, toggleFacet, places, measure, measureAuto }) {
+export function QueryPanel({ cat, state, go, toggleFacet, places, measure, measureAuto, selectionTotal }) {
   const ds = cat.datasets[state.d];
   const years = yearsFor(cat, state.d, state.g);
   const geos = geographies(cat);
@@ -96,22 +96,50 @@ export function QueryPanel({ cat, state, go, toggleFacet, places, measure, measu
           </select>
           <div class="small muted" style="margin:.5rem 0 0">
             <p style="margin:0 0 .5rem">${cat.measures[measure]?.description}</p>
+            ${(() => {
+              /* Whether the choice fits what is actually on screen, not just
+               * the general rule. Stating "recommended above 600,000" while a
+               * 40,000-person county is displayed leaves the reader to do the
+               * comparison, which is the part worth doing for them. */
+              const threshold = cat.measure_selection_population_threshold;
+              const advised = defaultMeasure(cat, selectionTotal);
+              const fits = advised === measure;
+              if (!threshold || !selectionTotal) return null;
+              return html`<p style="margin:0 0 .5rem">
+                This selection totals ${Math.round(selectionTotal).toLocaleString()},
+                ${selectionTotal > threshold ? ' above ' : ' below '}
+                the ${threshold.toLocaleString()} threshold, so${' '}
+                <strong>${cat.measures[advised]?.label.toLowerCase()}</strong> is the
+                recommended version${fits ? ' — the one in use.' : ' and this is not it.'}
+              </p>`;
+            })()}
             <p style="margin:0 0 .5rem">
-              Recommended when ${cat.measures[measure]?.recommended_when}. The two
-              versions differ most for small geographies and for sparse categories —
-              notably the oldest age group and the residual "not reported" categories,
-              where the adjustment shifts a visible share of the total. They are
-              different estimators of the same quantity and should not be combined in
-              a single table.
+              The two versions differ most for small geographies and for sparse
+              categories — notably the oldest age group and the residual "not
+              reported" categories, where the adjustment shifts a visible share of
+              the total. They are different estimators of the same quantity and
+              should not be combined in a single table.
             </p>
-            ${measureAuto
-              ? html`<p style="margin:0">${'Selected automatically at the '}
-                  ${cat.measure_selection_population_threshold.toLocaleString()}
-                  ${' population threshold.'}</p>`
-              : html`<p style="margin:0">Set manually.
+            ${(() => {
+              const advised = defaultMeasure(cat, selectionTotal);
+              const mismatch = selectionTotal > 0 && advised !== measure;
+              if (mismatch) {
+                return html`<p style="margin:0">
                   <button class="btn btn-quiet btn-sm" style="padding:0 .2rem"
-                          onClick=${() => go({ m: null })}>Use the recommended version</button>
-                </p>`}
+                          onClick=${() => go({ m: advised })}>
+                    Switch to ${cat.measures[advised]?.label.toLowerCase()}
+                  </button>
+                </p>`;
+              }
+              return measureAuto
+                ? html`<p style="margin:0">${'Selected automatically at the '}
+                    ${cat.measure_selection_population_threshold.toLocaleString()}
+                    ${' population threshold.'}</p>`
+                : html`<p style="margin:0">Set manually.
+                    <button class="btn btn-quiet btn-sm" style="padding:0 .2rem"
+                            onClick=${() => go({ m: null })}>Use the recommended version</button>
+                  </p>`;
+            })()}
           </div>
         </div>
 

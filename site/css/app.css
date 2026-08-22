@@ -223,11 +223,20 @@ table.data tbody tr:hover { background: var(--surface-inset); }
 }
 
 /* Map count/share toggle. Sits on the canvas beside what it changes. */
-.map-mode { position: absolute; left: 14px; top: 14px; z-index: 3; display: flex; gap: 6px;
+.map-mode { position: absolute; left: 14px; top: 14px; z-index: 3;
   background: rgba(255,255,255,.94); border: 1px solid var(--line);
-  border-radius: 8px; padding: 5px; box-shadow: var(--shadow); }
+  border-radius: 8px; padding: 5px; box-shadow: var(--shadow); max-width: 260px; }
+.map-mode-row { display: flex; gap: 6px; }
+/* Rendered as text, not a title attribute: browsers suppress tooltips on
+   disabled controls, so the explanation was unreachable exactly when needed. */
+.map-mode-hint { font-size: .72rem; color: var(--muted); padding: 5px 3px 1px; line-height: 1.35; }
 .map-mode .chip { font-size: .78rem; padding: .28rem .6rem; }
 
 /* Share is offered but inert without a facet: an absent control reads as
    broken, a disabled one explains itself on hover. */
 .map-mode .chip.is-disabled { opacity: .45; cursor: not-allowed; }
+
+/* The small-count flag carries its own explanation. Focusable so it is
+   reachable without a mouse, and cued so it reads as explanatory. */
+.tag-help { cursor: help; border-bottom: 1px dotted currentColor; }
+.tag-help:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }

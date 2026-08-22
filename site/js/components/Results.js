@@ -11,20 +11,71 @@ import { count, compact, toCsv, download } from '../format.js';
  * published wording while the underlying value stays the code the data uses.
  * The CSV deliberately keeps codes: an export exists to be joined back to the
  * source files, and a relabelled value would not match them. */
-export function ResultsTable({ rows, columns, labels, valueLabels, onExport, note }) {
-  const [sort, setSort] = useState({ col: 'value', asc: false });
+/* Shown on the flag itself, not the cell, so hovering the thing you are asking
+ * about is what explains it. */
+const SMALL_EXPLAINER =
+  'Fewer than 100 people. Privacy noise of about ±3 per grid cell does not ' +
+  'average out at this size, so treat the figure as approximate rather than exact.';
+
+export function ResultsTable({ rows, columns, labels, valueLabels, valueOrder, onExport, note }) {
   const [compact_, setCompact] = useState(false);
+
+  /* Rank lookups from the registry's declared order. Without these, dimension
+   * columns sort alphabetically, which is meaningless for ordered categories:
+   * age became "19-65, Missing Age, Over 65, Under 18" and income deciles
+   * sorted 0, 1, 10, 2. */
+  const ranks = useMemo(() => {
+    const out = {};
+    for (const [col, codes] of Object.entries(valueOrder || {})) {
+      out[col] = new Map(codes.map((c, i) => [String(c), i]));
+    }
+    return out;
+  }, [valueOrder]);
+
+  /* Default sort. A ranking by value is the point when rows are places — the
+   * question is which are biggest. But when rows are a demographic breakdown,
+   * ordering by the rightmost column scrambles the columns people read first,
+   * so the declared order of the leading dimension wins instead. */
+  const dimensionCols = useMemo(
+    () => columns.filter((c) => ranks[c] && c !== 'geo_id'),
+    [columns, ranks]
+  );
+  const defaultSort = dimensionCols.length
+    ? { col: dimensionCols[0], asc: true }
+    : { col: 'value', asc: false };
+  const [sort, setSort] = useState(defaultSort);
+
+  const cmpOne = (col, a, b) => {
+    const x = a[col];
+    const y = b[col];
+    const rank = ranks[col];
+    if (rank) {
+      // Unknown codes sort last rather than colliding at position 0.
+      const rx = rank.has(String(x)) ? rank.get(String(x)) : Number.MAX_SAFE_INTEGER;
+      const ry = rank.has(String(y)) ? rank.get(String(y)) : Number.MAX_SAFE_INTEGER;
+      if (rx !== ry) return rx - ry;
+      return String(x ?? '').localeCompare(String(y ?? ''));
+    }
+    if (typeof x === 'number' && typeof y === 'number') return x - y;
+    return String(x ?? '').localeCompare(String(y ?? ''));
+  };
 
   const sorted = useMemo(() => {
     const r = [...rows];
     r.sort((a, b) => {
-      const x = a[sort.col], y = b[sort.col];
-      const n = typeof x === 'number' && typeof y === 'number';
-      const cmp = n ? x - y : String(x ?? '').localeCompare(String(y ?? ''));
-      return sort.asc ? cmp : -cmp;
+      const cmp = cmpOne(sort.col, a, b);
+      if (cmp !== 0) return sort.asc ? cmp : -cmp;
+      // Tie-break down the remaining dimensions in column order, so the whole
+      // table reads consistently left to right rather than arbitrarily.
+      for (const c of dimensionCols) {
+        if (c === sort.col) continue;
+        const t = cmpOne(c, a, b);
+        if (t !== 0) return t;
+      }
+      return (b.value ?? 0) - (a.value ?? 0);
     });
     return r;
-  }, [rows, sort]);
+  }, [rows, sort, ranks, dimensionCols]);
 
   if (!rows.length) {
     return html`<p class="muted small" style="padding:20px">
@@ -61,9 +112,14 @@ export function ResultsTable({ rows, columns, labels, valueLabels, onExport, not
                   const numeric = typeof v === 'number';
                   const shown = numeric ? v : (valueLabels?.[c]?.[v] ?? v);
                   const small = c === 'value' && numeric && Math.abs(v) < 100;
-                  return html`<td class=${numeric ? 'n' : ''}
-                                  title=${small ? 'Small count — privacy noise is large relative to this value' : ''}>
-                    ${numeric ? count(v) : (shown ?? '—')}${small ? html` <span class="tag">small</span>` : ''}
+                  return html`<td class=${numeric ? 'n' : ''}>
+                    ${numeric ? count(v) : (shown ?? '—')}${small
+                      ? html` <span
+                          class="tag tag-help"
+                          tabindex="0"
+                          title=${SMALL_EXPLAINER}
+                          aria-label=${SMALL_EXPLAINER}>small</span>`
+                      : ''}
                   </td>`;
                 })}
               </tr>`)}

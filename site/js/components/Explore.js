@@ -38,6 +38,19 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
     return out;
   }, [places, state.g]);
 
+  /* Declared order for each dimension, so the table can sort by meaning rather
+   * than alphabetically. Age read "19-65, Missing Age, Over 65, Under 18"
+   * before this; income deciles sorted 0, 1, 10, 2. The registry already
+   * carries the right sequence — this just surfaces it. */
+  const valueOrder = useMemo(() => {
+    const out = {};
+    for (const dimId of ds?.dimensions || []) {
+      const d = dimension(cat, dimId);
+      if (d) out[dimId] = d.values.map((v) => String(v.code));
+    }
+    return out;
+  }, [cat, ds]);
+
   /* code -> published label, per dimension. The table shows the label; the
    * query and the CSV keep the code, which is what the source files contain. */
   const valueLabels = useMemo(() => {
@@ -196,6 +209,7 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
 
       <div class="workbench">
         <${QueryPanel} cat=${cat} state=${{ ...state, y: year }} go=${go}
+                       selectionTotal=${rows.reduce((a, r) => a + (Number(r.value) || 0), 0)}
                        toggleFacet=${toggleFacet} places=${places}
                        measure=${measure} measureAuto=${auto} />
 
@@ -215,7 +229,7 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
           ${state.tab === 'table' && html`
             <${ResultsTable}
               rows=${display} columns=${columns} labels=${labels}
-              valueLabels=${valueLabels}
+              valueLabels=${valueLabels} valueOrder=${valueOrder}
               note=${`${cat.measures[measure].label.toLowerCase()} estimates`}
               onExport=${() => exportCsv(display, columns,
                 `gridded-eif_${state.d}_${state.g}_${year}.csv`, valueLabels)} />`}

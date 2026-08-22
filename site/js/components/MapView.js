@@ -340,15 +340,18 @@ export function MapView({
       <div ref=${holder} class="map"></div>
 
       <div class="map-mode">
-        <button class=${'chip' + (!isShare ? ' on' : '')}
-                onClick=${() => onModeChange && onModeChange('count')}>Count</button>
-        <button
-          class=${'chip' + (isShare ? ' on' : '') + (shareAvailable ? '' : ' is-disabled')}
-          disabled=${!shareAvailable}
-          title=${shareAvailable
-            ? 'Share of each unit\u2019s total population'
-            : 'Pick a race, age, sex, or income filter first — without one the share is 100% everywhere'}
-          onClick=${() => shareAvailable && onModeChange && onModeChange('share')}>Share</button>
+        <div class="map-mode-row">
+          <button class=${'chip' + (!isShare ? ' on' : '')}
+                  onClick=${() => onModeChange && onModeChange('count')}>Count</button>
+          <button
+            class=${'chip' + (isShare ? ' on' : '') + (shareAvailable ? '' : ' is-disabled')}
+            aria-disabled=${!shareAvailable}
+            onClick=${() => shareAvailable && onModeChange && onModeChange('share')}>Share</button>
+        </div>
+        ${!shareAvailable &&
+        html`<div class="map-mode-hint">
+          Add a race, age, sex, or income filter. With none, every unit is 100% of itself.
+        </div>`}
       </div>
 
       ${err && html`<div class="map-overlay"><${Notice} kind="warn">${err}<//></div>`}
