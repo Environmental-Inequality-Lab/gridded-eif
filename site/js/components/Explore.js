@@ -213,12 +213,23 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
               </div>
             </div>`}
 
-          ${state.tab === 'map' && html`
+          ${state.tab === 'map' && !cat.boundaries?.[state.g] && html`
+            <div style="padding:16px">
+              <${Notice}>
+                <strong>No map for ${cat.geographies[state.g]?.label || state.g}.</strong>
+                ${' '}Boundary geometry is not published for this level. The table,
+                time series, and downloads are unaffected.
+              <//>
+            </div>`}
+
+          ${state.tab === 'map' && cat.boundaries?.[state.g] && html`
             <div style="padding:8px">
               <${MapView}
                 rows=${mapRows}
                 geography=${state.g}
                 boundariesUrl=${cat.boundaries?.[state.g]}
+                referenceUrl=${state.g === 'state' || state.g === 'nation'
+                                 ? null : cat.boundaries?.state}
                 names=${placeNames}
                 valueLabel=${`${ds?.label || ''} · ${year}`}
                 selected=${state.p}

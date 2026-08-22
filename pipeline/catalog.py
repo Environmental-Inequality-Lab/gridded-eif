@@ -181,6 +181,7 @@ def build(
         "boundaries": {
             g: f"{base_url.rstrip('/')}/{config.boundaries_key(g)}"
             for g in sorted({e["geography"] for e in entries})
+            if reg["geographies"].get(g, {}).get("map", True) is not False
         },
         "datasets": datasets,
         "aggregation": reg["aggregation"],

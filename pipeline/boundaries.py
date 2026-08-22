@@ -37,8 +37,15 @@ DEFAULT_TOLERANCE = 0.005
 TERRITORIES = ("72", "78", "66", "60", "69")
 
 
+class MapUnsupported(Exception):
+    """Raised for a geography deliberately excluded from the map."""
+
+
 def build(geography: str, force: bool = False) -> Path:
     """Write simplified GeoJSON for one geography level."""
+    if config.registry()["geographies"][geography].get("map", True) is False:
+        raise MapUnsupported(geography)
+
     out = CACHE / f"bounds_{geography}.geojson"
     if out.exists() and not force:
         console.print(f"[dim]boundaries {geography}: cached[/dim]")

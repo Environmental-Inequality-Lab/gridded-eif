@@ -1,11 +1,17 @@
-/* Choropleth map.
+/* Map of the queried place.
  *
- * Geometry and values are kept strictly separate. Boundary GeoJSON carries
+ * The question this answers is "where is this place, and what does it cover?"
+ * — not "how does the country vary?" So the selected unit is the subject: the
+ * map frames its extent and outlines it, with neighbouring units shaded behind
+ * for context and a coarser boundary underneath for orientation. With nothing
+ * selected it falls back to a national choropleth.
+ *
+ * Geometry and values stay strictly separate. Boundary GeoJSON carries
  * `geo_id` and nothing else; query results are joined to features at render
- * time via MapLibre feature-state. So a new year of data needs no new
- * geometry, and one boundary file serves every measure, year, and filter.
+ * time via feature-state. A new year of data needs no new geometry, and one
+ * boundary file serves every measure, year, and filter.
  *
- * MapLibre is loaded lazily. It is the heaviest dependency on the site and
+ * MapLibre is loaded lazily — it is the heaviest dependency on the site and
  * most visits never open the map.
  */
 import { html, useEffect, useRef, useState } from '../h.js';
@@ -22,6 +28,7 @@ const RAMP = ['#f6f0f0', '#e4cdcd', '#d0a2a2', '#b97575', '#9f4a4a', '#7e282a', 
 const NO_DATA = '#eceef1';
 
 let maplibrePromise = null;
+const geojsonCache = new Map();
 
 function loadMaplibre() {
   if (maplibrePromise) return maplibrePromise;
@@ -39,6 +46,41 @@ function loadMaplibre() {
   return maplibrePromise;
 }
 
+/* Fetched here rather than handed to MapLibre as a URL, so the parsed features
+ * are available for bounding-box lookups. The browser serves the second
+ * consumer from cache, so this costs one request either way. */
+function loadGeojson(url) {
+  if (!geojsonCache.has(url)) {
+    geojsonCache.set(
+      url,
+      fetch(url).then((r) => {
+        if (!r.ok) throw new Error(`Could not load boundaries (HTTP ${r.status}).`);
+        return r.json();
+      })
+    );
+  }
+  return geojsonCache.get(url);
+}
+
+function bboxOf(geometry) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  const walk = (coords) => {
+    if (typeof coords[0] === 'number') {
+      if (coords[0] < minX) minX = coords[0];
+      if (coords[0] > maxX) maxX = coords[0];
+      if (coords[1] < minY) minY = coords[1];
+      if (coords[1] > maxY) maxY = coords[1];
+      return;
+    }
+    for (const c of coords) walk(c);
+  };
+  walk(geometry.coordinates);
+  return [minX, minY, maxX, maxY];
+}
+
 /* Quantile breaks. Population is heavily skewed, a few very large units and
  * many small ones, so equal-interval breaks would paint nearly everything the
  * lightest shade and show nothing. */
@@ -51,20 +93,30 @@ function quantileBreaks(values, n) {
 }
 
 function colorExpression(breaks) {
-  // Reads feature-state, so recolouring never touches the geometry source.
   const step = ['step', ['feature-state', 'v'], RAMP[0]];
   breaks.forEach((b, i) => step.push(b, RAMP[Math.min(i + 1, RAMP.length - 1)]));
   return ['case', ['==', ['feature-state', 'v'], null], NO_DATA, step];
 }
 
-export function MapView({ rows, geography, boundariesUrl, names, valueLabel, selected, onPick }) {
+export function MapView({
+  rows,
+  geography,
+  boundariesUrl,
+  referenceUrl,
+  names,
+  valueLabel,
+  selected,
+  onPick,
+}) {
   const holder = useRef(null);
   const map = useRef(null);
   const loadedFor = useRef(null);
+  const bboxes = useRef(new Map());
   const [ready, setReady] = useState(false);
   const [err, setErr] = useState(null);
   const [hover, setHover] = useState(null);
   const [breaks, setBreaks] = useState([]);
+  const [geomReady, setGeomReady] = useState(0);
 
   // Create the map once.
   useEffect(() => {
@@ -82,7 +134,7 @@ export function MapView({ rows, geography, boundariesUrl, names, valueLabel, sel
           },
           center: [-98.5, 39.5],
           zoom: 3.05,
-          maxZoom: 11,
+          maxZoom: 12,
           attributionControl: false,
         });
         m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
@@ -90,10 +142,9 @@ export function MapView({ rows, geography, boundariesUrl, names, valueLabel, sel
           if (dead) return;
           map.current = m;
           setReady(true);
-          // MapLibre measures its container once at construction. The map is
-          // inside a tab panel, so at that moment the container has not always
-          // reached its final height, leaving the canvas short and the map
-          // clipped until something else forces a redraw.
+          // MapLibre measures its container once at construction. The map lives
+          // in a tab panel, so at that moment the container has not always
+          // reached its final height, leaving the canvas short and clipped.
           m.resize();
         });
         if (typeof ResizeObserver !== 'undefined') {
@@ -115,61 +166,99 @@ export function MapView({ rows, geography, boundariesUrl, names, valueLabel, sel
   // Swap geometry when the geography changes.
   useEffect(() => {
     const m = map.current;
-    if (!ready || !m || !boundariesUrl) return;
-    if (loadedFor.current === geography) return;
+    if (!ready || !m || !boundariesUrl) return undefined;
+    if (loadedFor.current === geography) return undefined;
     loadedFor.current = geography;
+    let dead = false;
 
-    for (const id of ['fill', 'line', 'sel']) {
+    for (const id of ['fill', 'line', 'sel', 'ref']) {
       if (m.getLayer(id)) m.removeLayer(id);
     }
-    if (m.getSource('geo')) m.removeSource('geo');
+    for (const id of ['geo', 'reference']) {
+      if (m.getSource(id)) m.removeSource(id);
+    }
+    setErr(null);
 
-    m.addSource('geo', {
-      type: 'geojson',
-      data: boundariesUrl,
-      // Lets feature-state be keyed by geo_id rather than an array index.
-      promoteId: 'geo_id',
-    });
-    m.addLayer({
-      id: 'fill',
-      type: 'fill',
-      source: 'geo',
-      paint: { 'fill-color': NO_DATA, 'fill-opacity': 0.92 },
-    });
-    m.addLayer({
-      id: 'line',
-      type: 'line',
-      source: 'geo',
-      paint: { 'line-color': '#ffffff', 'line-width': 0.4, 'line-opacity': 0.7 },
-    });
-    m.addLayer({
-      id: 'sel',
-      type: 'line',
-      source: 'geo',
-      paint: { 'line-color': '#111111', 'line-width': 2 },
-      filter: ['==', ['get', 'geo_id'], '__none__'],
-    });
+    Promise.all([
+      loadGeojson(boundariesUrl),
+      referenceUrl ? loadGeojson(referenceUrl).catch(() => null) : Promise.resolve(null),
+    ])
+      .then(([data, reference]) => {
+        if (dead || !map.current) return;
 
-    m.on('mousemove', 'fill', (e) => {
-      const f = e.features && e.features[0];
-      if (!f) return;
-      m.getCanvas().style.cursor = 'pointer';
-      setHover({ id: String(f.id), v: f.state && f.state.v != null ? f.state.v : null, x: e.point.x, y: e.point.y });
-    });
-    m.on('mouseleave', 'fill', () => {
-      m.getCanvas().style.cursor = '';
-      setHover(null);
-    });
-    m.on('click', 'fill', (e) => {
-      const f = e.features && e.features[0];
-      if (f && onPick) onPick(String(f.id));
-    });
-  }, [ready, geography, boundariesUrl]);
+        bboxes.current = new Map();
+        for (const f of data.features) {
+          if (f.geometry) bboxes.current.set(String(f.properties.geo_id), bboxOf(f.geometry));
+        }
+
+        // Orientation layer, added first so it sits beneath everything. Only
+        // meaningful when the queried units are smaller than a state.
+        if (reference) {
+          m.addSource('reference', { type: 'geojson', data: reference });
+          m.addLayer({
+            id: 'ref',
+            type: 'line',
+            source: 'reference',
+            paint: { 'line-color': '#98a0ab', 'line-width': 0.8, 'line-opacity': 0.6 },
+          });
+        }
+
+        m.addSource('geo', { type: 'geojson', data, promoteId: 'geo_id' });
+        m.addLayer({
+          id: 'fill',
+          type: 'fill',
+          source: 'geo',
+          paint: { 'fill-color': NO_DATA, 'fill-opacity': 0.9 },
+        });
+        m.addLayer({
+          id: 'line',
+          type: 'line',
+          source: 'geo',
+          paint: { 'line-color': '#ffffff', 'line-width': 0.4, 'line-opacity': 0.7 },
+        });
+        m.addLayer({
+          id: 'sel',
+          type: 'line',
+          source: 'geo',
+          paint: { 'line-color': '#111111', 'line-width': 2.4 },
+          filter: ['==', ['get', 'geo_id'], '__none__'],
+        });
+
+        m.on('mousemove', 'fill', (e) => {
+          const f = e.features && e.features[0];
+          if (!f) return;
+          m.getCanvas().style.cursor = 'pointer';
+          setHover({
+            id: String(f.id),
+            v: f.state && f.state.v != null ? f.state.v : null,
+            x: e.point.x,
+            y: e.point.y,
+          });
+        });
+        m.on('mouseleave', 'fill', () => {
+          m.getCanvas().style.cursor = '';
+          setHover(null);
+        });
+        m.on('click', 'fill', (e) => {
+          const f = e.features && e.features[0];
+          if (f && onPick) onPick(String(f.id));
+        });
+
+        setGeomReady((n) => n + 1);
+      })
+      .catch((e) => {
+        if (!dead) setErr(e.message);
+      });
+
+    return () => {
+      dead = true;
+    };
+  }, [ready, geography, boundariesUrl, referenceUrl]);
 
   // Push values in as feature-state and recolour.
   useEffect(() => {
     const m = map.current;
-    if (!ready || !m || !m.getSource('geo')) return;
+    if (!ready || !m || !m.getSource('geo')) return undefined;
 
     const apply = () => {
       m.removeFeatureState({ source: 'geo' });
@@ -185,7 +274,6 @@ export function MapView({ rows, geography, boundariesUrl, names, valueLabel, sel
       if (m.getLayer('fill')) m.setPaintProperty('fill', 'fill-color', colorExpression(b));
     };
 
-    // A GeoJSON source cannot accept feature-state until it has parsed.
     if (m.isSourceLoaded('geo')) {
       apply();
       return undefined;
@@ -198,14 +286,34 @@ export function MapView({ rows, geography, boundariesUrl, names, valueLabel, sel
     };
     m.on('sourcedata', onData);
     return () => m.off('sourcedata', onData);
-  }, [ready, rows, geography]);
+  }, [ready, rows, geography, geomReady]);
 
-  // Outline the selected unit.
+  /* Frame the selected place. This is the point of the map: a county FIPS or a
+   * CBSA code tells you nothing about where somewhere is or how far it reaches. */
   useEffect(() => {
     const m = map.current;
     if (!ready || !m || !m.getLayer('sel')) return;
     m.setFilter('sel', ['==', ['get', 'geo_id'], selected || '__none__']);
-  }, [ready, selected, geography]);
+
+    const home = () => m.easeTo({ center: [-98.5, 39.5], zoom: 3.05, duration: 600 });
+    if (!selected) {
+      home();
+      return;
+    }
+    const bb = bboxes.current.get(String(selected));
+    if (!bb) return;
+    // Alaska's Aleutian islands cross the antimeridian, producing a bbox that
+    // spans the globe. Framing that would zoom out to the whole world, so fall
+    // back to the national view rather than something actively misleading.
+    if (bb[2] - bb[0] > 180) {
+      home();
+      return;
+    }
+    m.fitBounds(
+      [[bb[0], bb[1]], [bb[2], bb[3]]],
+      { padding: 56, duration: 800, maxZoom: 10 }
+    );
+  }, [ready, selected, geography, geomReady]);
 
   const hoverName = hover ? (names && names[hover.id]) || hover.id : null;
 
@@ -230,7 +338,9 @@ export function MapView({ rows, geography, boundariesUrl, names, valueLabel, sel
           <span>${compact(breaks[0])}</span>
           <span>${compact(breaks[breaks.length - 1])}</span>
         </div>
-        <div class="map-legend-note">Quantile breaks. Click a unit to select it.</div>
+        <div class="map-legend-note">
+          ${selected ? 'Outlined area is the current selection.' : 'Click any area to select it.'}
+        </div>
       </div>`}
     </div>`;
 }

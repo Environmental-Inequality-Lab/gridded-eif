@@ -174,7 +174,13 @@ def boundaries(
         led = BUILD_DIR / "_ledger"
         levels = sorted({p.parent.name for p in led.rglob("*.json") if p.parent.name != "_combined"})
     for level in levels:
-        src = boundaries_mod.build(level, force=force)
+        try:
+            src = boundaries_mod.build(level, force=force)
+        except boundaries_mod.MapUnsupported:
+            # Deliberate, not a failure: the catalog simply omits the boundary
+            # and the site hides the map tab for that level.
+            console.print(f"[dim]boundaries {level}: no map layer (see registry)[/dim]")
+            continue
         dest = BUILD_DIR / config.boundaries_key(level)
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(src.read_text())

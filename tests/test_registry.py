@@ -302,3 +302,26 @@ def test_derived_geographies_declare_their_parent_and_source():
         assert spec.get("built_from"), f"{name} needs built_from"
         assert spec.get("crosswalk_url"), f"{name} needs crosswalk_url"
         assert spec.get("crosswalk_key_field") and spec.get("crosswalk_value_field")
+
+
+def test_map_excluded_geographies_are_absent_from_boundaries():
+    """A level with `map: false` must not be advertised as having geometry.
+
+    The site shows its Map tab purely on the presence of a boundary URL, so an
+    advertised-but-missing boundary would render an empty map rather than
+    hiding the tab.
+    """
+    from pipeline import boundaries
+
+    reg = config.registry()["geographies"]
+    excluded = [g for g, spec in reg.items() if spec.get("map", True) is False]
+    assert "zcta" in excluded, "ZCTA is excluded: its topology needs tens of GB to build"
+
+    for g in excluded:
+        try:
+            boundaries.build(g)
+        except boundaries.MapUnsupported:
+            continue
+        except Exception as exc:
+            raise AssertionError(f"{g} should raise MapUnsupported, got {exc!r}") from exc
+        raise AssertionError(f"{g} is marked map:false but built a boundary anyway")
