@@ -99,7 +99,12 @@ export function ResultsTable({ rows, columns, labels, valueLabels, valueOrder, o
           <thead>
             <tr>${columns.map((c) => html`
               <th class=${sort.col === c ? 'sorted ' + (sort.asc ? 'asc' : '') : ''}
-                  onClick=${() => setSort((s) => ({ col: c, asc: s.col === c ? !s.asc : false }))}>
+                  onClick=${() => setSort((s) =>
+                    // A fresh click on a dimension starts in declared order;
+                    // on a measure it starts with the largest. Defaulting
+                    // everything to descending reversed the categories, so
+                    // clicking Sex led with "Not reported".
+                    s.col === c ? { col: c, asc: !s.asc } : { col: c, asc: !!ranks[c] })}>
                 ${labels?.[c] || c}
               </th>`)}
             </tr>
@@ -126,6 +131,10 @@ export function ResultsTable({ rows, columns, labels, valueLabels, valueOrder, o
           </tbody>
         </table>
       </div>
+      ${sorted.some((r) => typeof r.value === 'number' && Math.abs(r.value) < 100) && html`
+        <p class="small muted" style="padding:8px 4px 0">
+          <span class="tag">small</span> ${SMALL_EXPLAINER}
+        </p>`}
       ${sorted.length > 500 && html`
         <p class="small muted" style="padding:8px 4px">
           Showing the first 500 of ${count(sorted.length)} rows. The CSV contains all of them.
