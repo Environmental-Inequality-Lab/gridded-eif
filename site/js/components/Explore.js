@@ -80,6 +80,15 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
       ? buildQuery({ url, measure, groupBy: ['geo_id'], filters: mapFilters })
       : null;
 
+    // Denominator for the share view: the same units with no demographic
+    // filter. Only needed when facets are actually narrowing something —
+    // without filters the share is 100% everywhere and says nothing.
+    const hasFacets = Object.values(state.facets || {}).some((v) => v && v.length);
+    const denomSql =
+      wantMap && state.mapMode === 'share' && hasFacets
+        ? buildQuery({ url, measure, groupBy: ['geo_id'], filters: {} })
+        : null;
+
     // allSettled, not all: the three views read different files, and one
     // being unavailable should not blank the other two. A missing all-years
     // file must not take the table and map down with it.
@@ -87,8 +96,9 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
       query(tableSql),
       seriesSql ? query(seriesSql) : Promise.resolve([]),
       mapSql ? query(mapSql) : Promise.resolve(null),
+      denomSql ? query(denomSql) : Promise.resolve(null),
     ])
-      .then(([t, s, mp]) => {
+      .then(([t, s, mp, dn]) => {
         if (cancelled) return;
         if (t.status === 'fulfilled') setRows(t.value);
         if (s.status === 'fulfilled') {
@@ -98,7 +108,24 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
           setSeries([]);
           setSeriesErr(String(s.reason?.message || s.reason));
         }
-        if (mp.status === 'fulfilled' && mp.value) setMapRows(mp.value);
+        if (mp.status === 'fulfilled' && mp.value) {
+          const numer = mp.value;
+          if (dn && dn.status === 'fulfilled' && dn.value) {
+            const total = new Map(dn.value.map((r) => [String(r.geo_id), Number(r.value)]));
+            setMapRows(
+              numer.map((r) => {
+                const d = total.get(String(r.geo_id));
+                // A share of a non-positive denominator is meaningless, and the
+                // raw measure can go negative, so those units render as no-data
+                // rather than as a fabricated percentage.
+                const v = d && d > 0 ? (Number(r.value) / d) * 100 : null;
+                return { geo_id: r.geo_id, value: v };
+              })
+            );
+          } else {
+            setMapRows(numer);
+          }
+        }
         setMs(Math.round(performance.now() - t0));
         // Only the table failing is fatal — it is what every other view hangs off.
         setErr(t.status === 'rejected' ? String(t.reason?.message || t.reason) : null);
@@ -106,7 +133,8 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
       .finally(() => !cancelled && setBusy(false));
 
     return () => { cancelled = true; };
-  }, [url, seriesUrl, measure, state.p, state.g, state.d, year, state.tab, JSON.stringify(state.facets)]);
+  }, [url, seriesUrl, measure, state.p, state.g, state.d, year, state.tab, state.mapMode,
+      JSON.stringify(state.facets)]);
 
   const placeName = useMemo(
     () => places?.find((p) => p.geo_id === state.p && p.level === state.g)?.name,
@@ -239,6 +267,9 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
                 names=${placeNames}
                 valueLabel=${`${ds?.label || ''} · ${year}`}
                 selected=${state.p}
+                mode=${state.mapMode}
+                shareAvailable=${Object.values(state.facets || {}).some((v) => v && v.length)}
+                onModeChange=${(m) => go({ mapMode: m })}
                 onPick=${(id) => go({ p: state.p === id ? null : id })} />
               <p class="small muted" style="margin-top:10px">
                 Colour shows ${measure === 'n_noise' ? 'raw' : 'post-processed'} counts for

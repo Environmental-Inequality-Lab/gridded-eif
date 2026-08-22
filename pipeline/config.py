@@ -112,10 +112,19 @@ def datasets(enabled_only: bool = True) -> dict[str, Dataset]:
 
 
 @cache
-def geographies(max_phase: int | None = None) -> dict[str, Geography]:
+def geographies(max_phase: int | None = None, include_disabled: bool = False) -> dict[str, Geography]:
+    """Geography levels this pipeline will build.
+
+    `enabled: false` in the registry excludes a level entirely — it was
+    previously ignored here, so disabling something silently did nothing. Pass
+    `include_disabled` only to inspect the full declared set; the raw registry
+    is still reachable via `registry()["geographies"]`.
+    """
     out: dict[str, Geography] = {}
     for name, spec in registry()["geographies"].items():
         if max_phase is not None and spec.get("phase", 99) > max_phase:
+            continue
+        if not include_disabled and spec.get("enabled", True) is False:
             continue
         out[name] = Geography(
             name=name,
@@ -196,6 +205,33 @@ def names_key(geography: str) -> str:
     """S3 key for a geography's id -> name lookup. Version-prefixed with the
     rest of the derived data, since names follow a TIGER boundary vintage."""
     return f"derived/{DERIVED_VERSION}/_names/{geography}.json"
+
+
+class GeographyDisabled(Exception):
+    """Raised when a deliberately disabled geography level is requested."""
+
+
+def resolve_geography(name: str) -> Geography:
+    """Look up a level, refusing disabled ones with the reason attached.
+
+    Without this a disabled level surfaces as a bare KeyError, which reads like
+    a typo rather than a decision and invites someone to just re-enable it.
+    """
+    geos = geographies()
+    if name in geos:
+        return geos[name]
+
+    spec = registry()["geographies"].get(name)
+    if spec is None:
+        raise GeographyDisabled(
+            f"Unknown geography {name!r}. Available: {', '.join(geos)}"
+        )
+    reason = spec.get("disabled_reason", "No reason recorded.")
+    raise GeographyDisabled(
+        f"{name!r} is disabled deliberately, not missing.\n\n{reason}\n\n"
+        f"Re-enabling it means setting `enabled: true` in catalog/variables.yaml "
+        f"and having new evidence that the objection no longer holds."
+    )
 
 
 def parse_years(spec: str, dataset: str | None = None) -> list[int]:

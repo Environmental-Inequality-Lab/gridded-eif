@@ -221,3 +221,9 @@ table.data tbody tr:hover { background: var(--surface-inset); }
   .hero-grid { grid-template-columns: 1fr; gap: 24px; }
   .hero-art { display: none; }
 }
+
+/* Map count/share toggle. Sits on the canvas beside what it changes. */
+.map-mode { position: absolute; left: 14px; top: 14px; z-index: 3; display: flex; gap: 6px;
+  background: rgba(255,255,255,.94); border: 1px solid var(--line);
+  border-radius: 8px; padding: 5px; box-shadow: var(--shadow); }
+.map-mode .chip { font-size: .78rem; padding: .28rem .6rem; }

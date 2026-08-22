@@ -275,7 +275,7 @@ def test_partial_coverage_geographies_do_not_snap():
     every unit populated. It inflated the CBSA total from 303.7M to 317.3M
     before this was caught.
     """
-    geos = config.geographies()
+    geos = config.geographies(include_disabled=True)
     assert geos["cbsa"].complete_coverage is False
     assert geos["zcta"].complete_coverage is False
 
@@ -338,3 +338,58 @@ def test_map_excluded_geographies_are_absent_from_boundaries():
         except Exception as exc:
             raise AssertionError(f"{g} should raise MapUnsupported, got {exc!r}") from exc
         raise AssertionError(f"{g} is marked map:false but built a boundary anyway")
+
+
+def test_tract_stays_disabled_with_its_reason_recorded():
+    """Tract was built, measured, and withdrawn. This locks the decision in.
+
+    Of 84,415 tract polygons only 77,422 receive any grid cell — the empty ones
+    have a median land area of 0.439 km2 against a ~1.1 km2 cell, so no
+    centroid falls inside them. The failure is systematically urban: 75.5% of
+    New York County tracts come back empty. Re-enabling it should be a
+    deliberate act with new evidence, not an accident.
+    """
+    spec = config.registry()["geographies"]["tract"]
+    assert spec.get("enabled") is False, "tract must stay disabled"
+    assert spec.get("map") is False
+    reason = spec.get("disabled_reason", "")
+    assert "0.439" in reason and "75.5" in reason, (
+        "the measured evidence must stay recorded, not just asserted"
+    )
+    assert "tract" not in config.geographies(), "a disabled level must not be buildable"
+
+
+def test_disabled_geographies_are_actually_excluded():
+    """`enabled: false` was previously ignored for geographies, so disabling a
+    level silently did nothing. Guard the flag it now depends on."""
+    declared = config.geographies(include_disabled=True)
+    buildable = config.geographies()
+    disabled = {
+        n for n, spec in config.registry()["geographies"].items()
+        if spec.get("enabled", True) is False
+    }
+    assert disabled, "expected at least one disabled level"
+    for name in disabled:
+        assert name in declared and name not in buildable
+
+
+def test_disabled_geography_refuses_with_its_reason():
+    """A disabled level must explain itself, not surface as a KeyError.
+
+    A bare KeyError reads like a typo and invites someone to re-enable the
+    level without knowing why it was withdrawn.
+    """
+    import pytest
+
+    with pytest.raises(config.GeographyDisabled) as exc:
+        config.resolve_geography("tract")
+    msg = str(exc.value)
+    assert "disabled deliberately" in msg
+    assert "75.5%" in msg, "the measured evidence must reach whoever hits this"
+
+    with pytest.raises(config.GeographyDisabled) as exc:
+        config.resolve_geography("nonsense")
+    assert "Unknown geography" in str(exc.value)
+
+    # An enabled level still resolves normally.
+    assert config.resolve_geography("county").name == "county"

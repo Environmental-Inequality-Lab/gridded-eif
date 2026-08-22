@@ -301,6 +301,40 @@ geographies:
   tract:
     label: Census tract
     phase: 3
+    # NOT BUILT. Measured, then withdrawn — the grid cannot support this level.
+    #
+    # Of 84,415 tract polygons, only 77,422 receive any grid cell; 6,993 (8.3%)
+    # get none. The empty tracts have a median land area of 0.439 km2 against a
+    # ~1.1 km2 grid cell, so no cell centroid falls inside them.
+    #
+    # The failure is systematically urban, which is where this research
+    # concentrates: 75.5% of New York County tracts come back empty, 58.2% of
+    # San Francisco, 43.2% of DC, 39.0% of Philadelphia, 29.1% of Cook County.
+    # Of the tracts that do get data, 14.4% rest on a single cell and 37.3% on
+    # three or fewer, so the privacy noise stops averaging out.
+    #
+    # Aggregation stays lossless — the national total is exact — but people are
+    # attributed to whichever tract holds their cell centroid, so dense tracts
+    # smaller than a cell lose their population to a neighbour. No caveat makes
+    # an absent tract acceptable, and a map with holes over Manhattan invites
+    # exactly the misreading this site exists to prevent.
+    #
+    # Anyone who needs tract can build it from the published crosswalk, where
+    # their own cells-per-tract counts are visible.
+    enabled: false
+    # Recorded as data, not a comment, so it cannot drift out of the file
+    # unnoticed and so a test can hold the decision in place.
+    disabled_reason: >-
+      Measured and withdrawn. Of 84,415 tract polygons only 77,422 receive any
+      grid cell; 6,993 (8.3%) receive none. Empty tracts have a median land area
+      of 0.439 km2 against a ~1.1 km2 grid cell, so no cell centroid falls
+      inside them. The failure is systematically urban - 75.5% of New York
+      County tracts come back empty, 58.2% of San Francisco, 43.2% of DC, 39.0%
+      of Philadelphia, 29.1% of Cook County. Of tracts that do receive data,
+      14.4% rest on a single cell and 37.3% on three or fewer, so privacy noise
+      stops averaging out. Aggregation remains lossless nationally, but dense
+      tracts smaller than a cell lose their population to a neighbour. Rebuild
+      from the published crosswalk if you need it, with cells-per-tract visible.
     tiger_url_pattern: https://www2.census.gov/geo/tiger/TIGER2024/TRACT/tl_2024_{state_fips}_tract.zip
     # Verified: TIGER2024 publishes TRACT, PUMA20, and CD per state; CBSA and
     # ZCTA520 are single national files.
@@ -309,7 +343,17 @@ geographies:
     name_field: NAMELSAD
     approx_units: 85000
     state_prefixed: true
-    caveat: The practical floor. Below this, privacy noise dominates.
+    # NO MAP LAYER, for the same reason as ZCTA: topology extraction over 85k
+    # polygons needs far more memory than a CI runner has. ZCTA already OOMs at
+    # 33k.
+    map: false
+    caveat: >-
+      Tracts approach the size of a single grid cell. Measured at ZCTA (33k
+      units) 1,143 units already rest on one cell; tracts are 2.6x finer, and
+      dense urban tracts can be physically smaller than one 1.1 km2 cell, so
+      centroid assignment either finds no cell or finds one whose residents
+      mostly live elsewhere. Noise stops averaging out. Treat tract estimates as
+      indicative, and prefer county or PUMA where either will serve.
 
   cd:
     label: Congressional district

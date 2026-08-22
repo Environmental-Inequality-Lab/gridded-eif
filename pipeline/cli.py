@@ -95,6 +95,13 @@ def build(
     """Aggregate one or more years to one or more geography levels."""
     names = dataset.split(",") if dataset else list(config.datasets())
     levels = [g.strip() for g in geography.split(",") if g.strip()]
+    # Fail before any download or join, with the reason rather than a KeyError.
+    for level in levels:
+        try:
+            config.resolve_geography(level)
+        except config.GeographyDisabled as exc:
+            console.print(f"[red]{exc}[/red]")
+            raise typer.Exit(1) from None
 
     # Resolve every year up front so a typo fails before any work is done,
     # rather than twenty minutes into a backfill.

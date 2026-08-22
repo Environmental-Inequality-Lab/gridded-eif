@@ -21,6 +21,7 @@ export const DEFAULTS = {
   m: null,          // measure (null = auto by population)
   p: null,          // place (geo_id)
   tab: 'table',
+  mapMode: 'count',  // 'count' | 'share' — map colouring only
 };
 
 function read() {

@@ -107,7 +107,12 @@ export function MapView({
   valueLabel,
   selected,
   onPick,
+  mode = 'count',
+  onModeChange,
+  shareAvailable = false,
 }) {
+  const isShare = mode === 'share' && shareAvailable;
+  const fmtValue = (v) => (isShare ? `${v.toFixed(1)}%` : count(v));
   const holder = useRef(null);
   const map = useRef(null);
   const loadedFor = useRef(null);
@@ -334,13 +339,21 @@ export function MapView({
     <div class="map-wrap">
       <div ref=${holder} class="map"></div>
 
+      ${shareAvailable && html`
+        <div class="map-mode">
+          <button class=${'chip' + (!isShare ? ' on' : '')}
+                  onClick=${() => onModeChange && onModeChange('count')}>Count</button>
+          <button class=${'chip' + (isShare ? ' on' : '')}
+                  onClick=${() => onModeChange && onModeChange('share')}>Share</button>
+        </div>`}
+
       ${err && html`<div class="map-overlay"><${Notice} kind="warn">${err}<//></div>`}
       ${!err && !ready && html`<div class="map-overlay"><${Spinner} label="Loading map" /></div>`}
 
       ${hover &&
       html`<div class="map-tip" style=${`left:${hover.x + 14}px; top:${hover.y + 14}px`}>
         <strong>${hoverName}</strong>
-        <span>${hover.v == null ? 'No data' : count(hover.v)}</span>
+        <span>${hover.v == null ? 'No data' : fmtValue(hover.v)}</span>
       </div>`}
 
       ${breaks.length > 0 &&
@@ -348,11 +361,14 @@ export function MapView({
         <div class="map-legend-label">${valueLabel}</div>
         <div class="map-legend-bar">${RAMP.map((c) => html`<span style=${`background:${c}`}></span>`)}</div>
         <div class="map-legend-ends">
-          <span>${compact(breaks[0])}</span>
-          <span>${compact(breaks[breaks.length - 1])}</span>
+          <span>${isShare ? breaks[0].toFixed(1) + '%' : compact(breaks[0])}</span>
+          <span>${isShare
+            ? breaks[breaks.length - 1].toFixed(1) + '%'
+            : compact(breaks[breaks.length - 1])}</span>
         </div>
         <div class="map-legend-note">
-          ${selected ? 'Outlined area is the current selection.' : 'Click any area to select it.'}
+          ${isShare ? 'Share of each unit\u2019s total population. ' : ''}${
+            selected ? 'Outlined area is the current selection.' : 'Click any area to select it.'}
         </div>
       </div>`}
     </div>`;
