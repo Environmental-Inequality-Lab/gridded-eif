@@ -29,6 +29,7 @@ from . import config
 
 console = Console()
 CACHE = config.REPO_ROOT / ".cache"
+BUILD_DIR_FOR_PUBLISH = config.REPO_ROOT / ".build"
 GRID_CRS = "EPSG:4326"
 
 
@@ -383,3 +384,35 @@ def _build_from_parent(geography: str, geo: config.Geography, out: Path) -> Path
         f"{parent.geo_id.nunique():,} units (derived from {geo.built_from})[/green]"
     )
     return out
+
+
+def publish_copy(geography: str) -> Path:
+    """Rewrite a cached crosswalk into the publishable build tree.
+
+    Kept separate from `build` so the published file can carry documentation
+    columns that the internal join does not need. The `snapped` flag travels
+    with it: a user aggregating their own data should be able to see which
+    cells were reassigned from outside the geography and decide for themselves.
+    """
+    src = build(geography)
+    dest = BUILD_DIR_FOR_PUBLISH / config.crosswalk_key(geography)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    con = duckdb.connect()
+    con.execute(f"""
+        COPY (
+            SELECT grid_lon, grid_lat, geo_id, snapped
+            FROM read_parquet('{src.as_posix()}')
+            ORDER BY geo_id, grid_lon, grid_lat
+        ) TO '{dest.as_posix()}'
+        (FORMAT PARQUET, COMPRESSION ZSTD, ROW_GROUP_SIZE 100000)
+    """)
+    rows, units, snapped = con.execute(f"""
+        SELECT count(*), count(DISTINCT geo_id), sum(CASE WHEN snapped THEN 1 ELSE 0 END)
+        FROM read_parquet('{dest.as_posix()}')
+    """).fetchone()
+    console.print(
+        f"[green]crosswalk {geography}[/green]: {rows:,} cells -> {units:,} units, "
+        f"{snapped:,} snapped, {dest.stat().st_size / 1e6:.1f} MB"
+    )
+    return dest

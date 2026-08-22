@@ -92,7 +92,14 @@ export function buildQuery({ url, measure, groupBy = [], filters = {}, year = nu
   }
   const cols = groupBy.length ? groupBy.join(', ') : null;
   const sql = [
-    `SELECT ${cols ? cols + ', ' : ''}sum(${measure}) AS value, sum(n_cells) AS cells`,
+    // n_cells is deliberately not selected. Summing it across demographic rows
+    // counts each grid cell once per group present in it — Wayne County reports
+    // 42,159 against 1,693 actual populated cells. A corrected count would still
+    // not be an area measure: cells are equal in degrees, not square kilometres
+    // (~1.12 km² in Florida, ~0.40 km² in northern Alaska), and only populated
+    // cells exist at all. Anyone who wants cell counts, density, or true area
+    // can compute them from the published crosswalk.
+    `SELECT ${cols ? cols + ', ' : ''}sum(${measure}) AS value`,
     `FROM read_parquet(${q(url)})`,
     where.length ? `WHERE ${where.join(' AND ')}` : '',
     cols ? `GROUP BY ${groupBy.map((_, i) => i + 1).join(', ')}` : '',

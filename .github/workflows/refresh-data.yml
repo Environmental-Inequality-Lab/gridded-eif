@@ -91,6 +91,10 @@ jobs:
       - name: Build name lookups
         run: geif names --geography "${{ inputs.geography }}"
 
+      # The spatial join, published for reuse. Independent of the aggregates.
+      - name: Publish crosswalks
+        run: geif crosswalks --geography "${{ inputs.geography }}"
+
       # Simplified boundary geometry for the map. Values join at render time,
       # so this is independent of the data partitions.
       - name: Build map boundaries

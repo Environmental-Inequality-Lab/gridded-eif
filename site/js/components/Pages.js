@@ -72,6 +72,38 @@ export function DataPage({ cat }) {
         </div>
       </div>
 
+      ${cat.crosswalks && Object.keys(cat.crosswalks).length > 0 && html`
+        <div class="card" style="margin-top:20px">
+          <h3>Crosswalks</h3>
+          <p class="small muted" style="max-width:74ch">
+            Which 0.01° grid cell belongs to which geography. The spatial join is
+            the expensive part of using this data — these files let you skip it
+            and aggregate the source grid yourself: the pollution and extreme
+            weather files, or geographies not published here.
+          </p>
+          <p class="small muted" style="max-width:74ch">
+            Columns are <code>grid_lon</code>, <code>grid_lat</code>,
+            <code>geo_id</code>, and <code>snapped</code>. The coordinates match
+            the source files exactly and are strings, so they join without
+            floating-point trouble. <code>snapped</code> marks the cells whose
+            centroid fell outside every unit and were assigned to the nearest
+            one — border cells, mostly along the Canadian and Mexican frontiers.
+          </p>
+          <div class="table-scroll" style="margin-top:12px">
+            <table class="data">
+              <thead><tr><th>Geography</th><th class="n">Size</th><th></th></tr></thead>
+              <tbody>
+                ${Object.entries(cat.crosswalks).sort().map(([g, url]) => html`
+                  <tr>
+                    <td>${cat.geographies?.[g]?.label || g}</td>
+                    <td class="n muted">parquet</td>
+                    <td><a href=${url}>Download</a></td>
+                  </tr>`)}
+              </tbody>
+            </table>
+          </div>
+        </div>`}
+
       <div class="card" style="margin-top:20px">
         <h3>Raw grid data</h3>
         <p class="small muted">

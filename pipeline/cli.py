@@ -163,6 +163,25 @@ def names(
 
 
 @app.command()
+def crosswalks(
+    geography: str = typer.Option(None, "--geography", help="Default: every level built"),
+) -> None:
+    """Publish the grid-cell to geography crosswalks.
+
+    The spatial join is the expensive part of using this data. Publishing the
+    crosswalk lets anyone reuse it — to aggregate the pollution and weather
+    files we do not serve, or to reach geographies we do not offer.
+    """
+    if geography:
+        levels = [g.strip() for g in geography.split(",")]
+    else:
+        led = BUILD_DIR / "_ledger"
+        levels = sorted({p.parent.name for p in led.rglob("*.json") if p.parent.name != "_combined"})
+    for level in levels:
+        crosswalk.publish_copy(level)
+
+
+@app.command()
 def boundaries(
     geography: str = typer.Option(None, "--geography", help="Default: every level built"),
     force: bool = typer.Option(False, "--force"),
@@ -259,6 +278,8 @@ def refresh(
         force=False,
     )
     names(geography=geography)
+    crosswalks(geography=geography)
+    boundaries(geography=geography)
     combine(geography=geography, dataset=None, base_url=base_url)
     catalog(base_url=base_url, merge_published=True)
     if bucket:

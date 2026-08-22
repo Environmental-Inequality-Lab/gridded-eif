@@ -176,6 +176,13 @@ def build(
             g: f"{base_url.rstrip('/')}/{config.names_key(g)}"
             for g in sorted({e["geography"] for e in entries})
         },
+        # Grid-cell to geography assignments. Published so anyone can reuse the
+        # spatial join — for the source files we do not aggregate, or for
+        # geographies we do not offer.
+        "crosswalks": {
+            g: f"{base_url.rstrip('/')}/{config.crosswalk_key(g)}"
+            for g in sorted({e["geography"] for e in entries})
+        },
         # Simplified geometry for the map. Carries geo_id only — the site joins
         # values at render time, so geometry never rebuilds for new data.
         "boundaries": {

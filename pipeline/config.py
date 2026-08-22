@@ -172,6 +172,17 @@ def combined_key(dataset: str, geography: str) -> str:
     return f"derived/{DERIVED_VERSION}/{dataset}/{geography}/all/part-00.parquet"
 
 
+def crosswalk_key(geography: str) -> str:
+    """S3 key for a published grid-cell to geography crosswalk.
+
+    Publishing these is the point of the project stated plainly: the expensive,
+    fiddly part of using the Gridded EIF is the spatial join, and a crosswalk
+    lets anyone reuse ours — for the pollution and weather files we do not
+    serve, or for geographies we do not offer.
+    """
+    return f"derived/{DERIVED_VERSION}/_crosswalks/{geography}.parquet"
+
+
 def boundaries_key(geography: str) -> str:
     """S3 key for a geography's simplified GeoJSON.
 

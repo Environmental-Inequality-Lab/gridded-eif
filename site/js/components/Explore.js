@@ -1,5 +1,6 @@
 import { html, useState, useEffect, useMemo } from '../h.js';
 import { query, buildQuery, q } from '../duck.js';
+import { CATALOG_URL } from '../config.js';
 import { entryUrl, combinedUrl, yearsFor, isPreliminary, dimension, defaultMeasure } from '../catalog.js';
 import { QueryPanel } from './QueryPanel.js';
 import { ResultsTable, TimeSeries, exportCsv } from './Results.js';
@@ -305,6 +306,36 @@ function CodeTab({ cat, url, seriesUrl, measure, state, year, rows, columns, ser
           <div><strong>${year}:</strong> ${url}</div>
           ${seriesUrl && html`<div style="margin-top:6px"><strong>All years:</strong> ${seriesUrl}</div>`}
         </div>
+      </div>
+
+      <div style="margin-top:22px">
+        <h4>Machine-readable catalog</h4>
+        <p class="small muted" style="max-width:74ch">
+          Every file on this site is listed in one JSON document. Read it and you
+          have the whole corpus — no scraping, no hardcoded paths. It is how this
+          page finds its own data, so it cannot drift from what is published.
+        </p>
+        <div class="small mono" style="word-break:break-all;background:var(--surface-inset);
+             border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px">
+          ${CATALOG_URL}
+        </div>
+        <table class="data small" style="margin-top:10px">
+          <thead><tr><th>Key</th><th>What it holds</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">entries</td><td>One record per dataset × geography × year, with URL, rows, bytes, and sha256</td></tr>
+            <tr><td class="mono">combined</td><td>All-years files, one per dataset × geography. Use these for time series</td></tr>
+            <tr><td class="mono">crosswalks</td><td>Grid cell to geography assignments</td></tr>
+            <tr><td class="mono">names</td><td>geo_id to display name, per geography</td></tr>
+            <tr><td class="mono">boundaries</td><td>Simplified GeoJSON, geo_id only</td></tr>
+            <tr><td class="mono">dimensions</td><td>Category codes and published labels</td></tr>
+            <tr><td class="mono">measures</td><td>The two estimate versions and when each applies</td></tr>
+          </tbody>
+        </table>
+        <p class="small muted" style="margin-top:8px">
+          <code>pipeline_version</code> and <code>generated_at</code> identify the
+          build. Data files are immutable; the catalog is not, so re-read it
+          rather than caching URLs indefinitely.
+        </p>
       </div>
       ${Object.entries(snippets).map(([k, v]) => html`
         <div>

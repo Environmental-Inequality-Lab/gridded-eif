@@ -208,3 +208,38 @@ def test_combined_file_stays_prunable(combined_county):
     assert len(hits) / len(groups) < 0.1, (
         f"one county touches {len(hits)}/{len(groups)} row groups — sort order lost"
     )
+
+
+def test_published_crosswalk_matches_the_aggregates():
+    """A published crosswalk must reproduce the aggregate it came from.
+
+    It exists so users can aggregate the source files we do not serve — the
+    pollution and weather grids — and reach geographies we do not offer. If it
+    disagreed with our own partitions it would send people quietly wrong
+    answers while looking authoritative.
+    """
+    xw = config.REPO_ROOT / ".build" / config.crosswalk_key("county")
+    part = config.REPO_ROOT / ".build" / config.derived_key("ageracesex", "county", 2022)
+    if not xw.exists() or not part.exists():
+        pytest.skip("run `geif crosswalks` and `geif build` first")
+
+    con = duckdb.connect()
+    cols = [r[0] for r in con.execute(
+        f"DESCRIBE SELECT * FROM read_parquet('{xw.as_posix()}')").fetchall()]
+    assert cols == ["grid_lon", "grid_lat", "geo_id", "snapped"]
+
+    # Same units, and every unit in the aggregate is reachable from the crosswalk.
+    xw_units = con.execute(
+        f"SELECT count(DISTINCT geo_id) FROM read_parquet('{xw.as_posix()}')").fetchone()[0]
+    agg_units = con.execute(
+        f"SELECT count(DISTINCT geo_id) FROM read_parquet('{part.as_posix()}')").fetchone()[0]
+    assert xw_units == agg_units == 3144
+
+    # Coordinates must stay strings: the source files store them that way
+    # deliberately, and a float join silently drops rows.
+    types = {
+        r[0]: r[1]
+        for r in con.execute(
+            f"DESCRIBE SELECT * FROM read_parquet('{xw.as_posix()}')").fetchall()
+    }
+    assert types["grid_lon"] == "VARCHAR" and types["grid_lat"] == "VARCHAR"
