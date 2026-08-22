@@ -138,15 +138,28 @@ export function MapView({
           attributionControl: false,
         });
         m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-        m.on('load', () => {
+        // Held immediately, not inside the load handler. If the component
+        // unmounts before `load` fires, a handle set only in that handler is
+        // still null at cleanup, so the map is never removed — it leaks, keeps
+        // its canvas in the DOM, and the next mount can sit on "Loading map"
+        // forever. Every other effect gates on `ready`, so an unloaded handle
+        // here is harmless.
+        map.current = m;
+
+        const onLoad = () => {
           if (dead) return;
-          map.current = m;
           setReady(true);
           // MapLibre measures its container once at construction. The map lives
           // in a tab panel, so at that moment the container has not always
           // reached its final height, leaving the canvas short and clipped.
           m.resize();
-        });
+        };
+        // The style is inline and has no external resources, so MapLibre can
+        // finish loading during construction — before a listener attached on
+        // the next line exists. Waiting on 'load' alone means missing it
+        // permanently and sitting on the loading overlay forever.
+        if (m.loaded()) onLoad();
+        else m.on('load', onLoad);
         if (typeof ResizeObserver !== 'undefined') {
           ro = new ResizeObserver(() => m.resize());
           ro.observe(holder.current);
