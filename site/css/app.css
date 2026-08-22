@@ -227,3 +227,7 @@ table.data tbody tr:hover { background: var(--surface-inset); }
   background: rgba(255,255,255,.94); border: 1px solid var(--line);
   border-radius: 8px; padding: 5px; box-shadow: var(--shadow); }
 .map-mode .chip { font-size: .78rem; padding: .28rem .6rem; }
+
+/* Share is offered but inert without a facet: an absent control reads as
+   broken, a disabled one explains itself on hover. */
+.map-mode .chip.is-disabled { opacity: .45; cursor: not-allowed; }

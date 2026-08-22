@@ -339,13 +339,17 @@ export function MapView({
     <div class="map-wrap">
       <div ref=${holder} class="map"></div>
 
-      ${shareAvailable && html`
-        <div class="map-mode">
-          <button class=${'chip' + (!isShare ? ' on' : '')}
-                  onClick=${() => onModeChange && onModeChange('count')}>Count</button>
-          <button class=${'chip' + (isShare ? ' on' : '')}
-                  onClick=${() => onModeChange && onModeChange('share')}>Share</button>
-        </div>`}
+      <div class="map-mode">
+        <button class=${'chip' + (!isShare ? ' on' : '')}
+                onClick=${() => onModeChange && onModeChange('count')}>Count</button>
+        <button
+          class=${'chip' + (isShare ? ' on' : '') + (shareAvailable ? '' : ' is-disabled')}
+          disabled=${!shareAvailable}
+          title=${shareAvailable
+            ? 'Share of each unit\u2019s total population'
+            : 'Pick a race, age, sex, or income filter first — without one the share is 100% everywhere'}
+          onClick=${() => shareAvailable && onModeChange && onModeChange('share')}>Share</button>
+      </div>
 
       ${err && html`<div class="map-overlay"><${Notice} kind="warn">${err}<//></div>`}
       ${!err && !ready && html`<div class="map-overlay"><${Spinner} label="Loading map" /></div>`}
