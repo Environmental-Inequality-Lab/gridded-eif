@@ -51,7 +51,7 @@ function App() {
         <//>
         <p class="small muted" style="margin-top:16px">
           The data files themselves are unaffected and can be downloaded directly
-          from the <a href=${SITE.repo}>repository</a> or the
+          from the <a href=${SITE.repo}>repository</a> or the${' '}
           <a href="https://www2.census.gov/ces/gridded_eif/">Census file directory</a>.
         </p>
       </main>`;

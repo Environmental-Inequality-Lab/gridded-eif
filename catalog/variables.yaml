@@ -32,14 +32,14 @@ grid:
 # -----------------------------------------------------------------------------
 measures:
   n_noise:
-    label: Raw
+    label: Raw (noise-injected) counts
     description: >-
       Direct output of the noise-infusion process. Unbiased, but can be negative
       (8.3% of grid-cell rows in 2022, min -8).
     recommended_when: aggregate population above 600,000
     non_negative: false
   n_noise_postprocessed:
-    label: Post-processed
+    label: Post-processed counts
     description: >-
       Small noisy cells pooled by race within each 1-degree grid point and
       redistributed, residual negatives clamped to zero. Always non-negative.

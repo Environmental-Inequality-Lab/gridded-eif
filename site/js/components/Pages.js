@@ -82,7 +82,7 @@ export function DataPage({ cat }) {
             weather files, or geographies not published here.
           </p>
           <p class="small muted" style="max-width:74ch">
-            Columns are <code>grid_lon</code>, <code>grid_lat</code>,
+            Columns are <code>grid_lon</code>, <code>grid_lat</code>,${' '}
             <code>geo_id</code>, and <code>snapped</code>. The coordinates match
             the source files exactly and are strings, so they join without
             floating-point trouble. <code>snapped</code> marks the cells whose
@@ -131,7 +131,7 @@ export function DocsPage({ cat }) {
         Decennial Census or Population Estimates Program.
       <//>
 
-      <h2 style="margin-top:34px">The two estimate versions</h2>
+      <h2 style="margin-top:34px">The two data options</h2>
       <p>Every count is published twice, and the difference is not cosmetic.</p>
       ${Object.entries(cat.measures).map(([id, m]) => html`
         <div class="card" style="margin-bottom:12px">
@@ -142,7 +142,7 @@ export function DocsPage({ cat }) {
       <p class="small muted">
         This site defaults by geography size, at a threshold of${' '}
         ${cat.measure_selection_population_threshold?.toLocaleString()} people, and shows
-        which version is in use. Never mix the two in one table — they are different
+        which option is in use. Never mix the two in one table — they are different
         estimators of the same quantity.
       </p>
 

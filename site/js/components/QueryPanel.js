@@ -88,7 +88,7 @@ export function QueryPanel({ cat, state, go, toggleFacet, places, measure, measu
         })}
 
         <div class="field">
-          <label for="m">Estimate version</label>
+          <label for="m">Data option</label>
           <select id="m" value=${state.m || measure}
                   onChange=${(e) => go({ m: e.target.value })}>
             ${Object.entries(cat.measures).map(([id, m]) => html`
@@ -106,15 +106,15 @@ export function QueryPanel({ cat, state, go, toggleFacet, places, measure, measu
               const fits = advised === measure;
               if (!threshold || !selectionTotal) return null;
               return html`<p style="margin:0 0 .5rem">
-                This selection totals ${Math.round(selectionTotal).toLocaleString()},
+                This selection totals ${Math.round(selectionTotal).toLocaleString()},${' '}
                 ${selectionTotal > threshold ? ' above ' : ' below '}
                 the ${threshold.toLocaleString()} threshold, so${' '}
                 <strong>${cat.measures[advised]?.label.toLowerCase()}</strong> is the
-                recommended version${fits ? ' — the one in use.' : ' and this is not it.'}
+                recommended option${fits ? ' — the one in use.' : ' and this is not it.'}
               </p>`;
             })()}
             <p style="margin:0 0 .5rem">
-              The two versions differ most for small geographies and for sparse
+              The two options differ most for small geographies and for sparse
               categories — notably the oldest age group and the residual "not
               reported" categories, where the adjustment shifts a visible share of
               the total. They are different estimators of the same quantity and
@@ -137,7 +137,7 @@ export function QueryPanel({ cat, state, go, toggleFacet, places, measure, measu
                     ${' population threshold.'}</p>`
                 : html`<p style="margin:0">Set manually.
                     <button class="btn btn-quiet btn-sm" style="padding:0 .2rem"
-                            onClick=${() => go({ m: null })}>Use the recommended version</button>
+                            onClick=${() => go({ m: null })}>Use the recommended option</button>
                   </p>`;
             })()}
           </div>

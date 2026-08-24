@@ -40,7 +40,8 @@ export function Footer({ cat }) {
         <div class="spread" style="align-items:flex-start;gap:28px">
           <div style="max-width:52ch">
             <strong>${SITE.name}</strong> — an ${' '}
-            <a href=${SITE.orgUrl}>${SITE.org}</a> project, built by Grant M. Seiter.
+            <a href=${SITE.orgUrl}>${SITE.org}</a> project, built by${' '}
+            <a href=${SITE.authorUrl}>${SITE.author}</a>.
             <p class="small" style="margin-top:.6rem">
               Built from the U.S. Census Bureau's Gridded Environmental Impacts Frame,
               an experimental data product. Counts derive from administrative records
@@ -54,14 +55,20 @@ export function Footer({ cat }) {
           </div>
           <div class="small" style="max-width:52ch">
             <strong>Citation</strong>
-            <p class="small" style="margin:.4rem 0">
-              John Voorheis, Jonathan Colmer, Kendall Houghton, Eva Lyubich, Mary Munro,
-              Cameron Scalera, Jennifer Withrow, The Census Environmental Impacts Frame,${' '}
-              <em>Review of Environmental Economics and Policy</em>, 20, 2, (304–312), (2026).
+            <p class="small muted" style="margin:.4rem 0 .5rem">
+              Please cite both this site, which produced the aggregated figures, and
+              the article introducing the underlying data.
             </p>
-            <p class="small muted" style="margin:0">
-              Data accessed from the ${SITE.name}${' '}
-              (${SITE.org}), ${cat ? String(cat.generated_at).slice(0, 10) : ''}.
+            <p class="small" style="margin:0 0 .5rem">
+              Seiter, Grant M. ${new Date().getFullYear()}.${' '}
+              <em>${SITE.name}</em>. ${SITE.org}.${' '}
+              ${SITE.url}${cat ? ` (accessed ${String(cat.generated_at).slice(0, 10)})` : ''}.
+            </p>
+            <p class="small" style="margin:0">
+              Voorheis, John, Jonathan Colmer, Kendall Houghton, Eva Lyubich, Mary Munro,
+              Cameron Scalera, and Jennifer Withrow. 2026. “The Census Environmental
+              Impacts Frame.”${' '}
+              <em>Review of Environmental Economics and Policy</em> 20 (2): 304–312.
             </p>
             ${cat && html`
               <div class="muted" style="margin-top:.6rem">
@@ -70,6 +77,13 @@ export function Footer({ cat }) {
               </div>`}
           </div>
         </div>
+        <p class="small muted" style="margin:22px 0 0;padding-top:16px;
+             border-top:1px solid var(--line);max-width:none">
+          <strong>Disclaimer:</strong> This content is presented to inform interested
+          parties of research and to encourage discussion. Any opinions and conclusions
+          expressed herein are those of the author(s) and do not reflect the views of
+          the U.S. Census Bureau.
+        </p>
       </div>
     </footer>
   `;

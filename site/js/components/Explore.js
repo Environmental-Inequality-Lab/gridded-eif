@@ -373,7 +373,7 @@ function CodeTab({ cat, url, seriesUrl, measure, state, year, rows, columns, ser
             <tr><td class="mono">names</td><td>geo_id to display name, per geography</td></tr>
             <tr><td class="mono">boundaries</td><td>Simplified GeoJSON, geo_id only</td></tr>
             <tr><td class="mono">dimensions</td><td>Category codes and published labels</td></tr>
-            <tr><td class="mono">measures</td><td>The two estimate versions and when each applies</td></tr>
+            <tr><td class="mono">measures</td><td>The two data options and when each applies</td></tr>
           </tbody>
         </table>
         <p class="small muted" style="margin-top:8px">

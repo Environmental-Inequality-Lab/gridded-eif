@@ -43,10 +43,11 @@ export function Landing({ cat, go, places }) {
           <p class="eyebrow">U.S. Census Bureau experimental data product</p>
           <h1 class="hero-title">Explore Gridded EIF Data</h1>
           <p class="lead">
-            A publicly accessible data product that aggregates the Census
-            Environmental Impacts Frame in ways that preserve privacy and maintain
-            analytical consistency — counts of the population by race and ethnicity,
-            sex, and age, and by race/ethnicity and household income decile.
+            The Gridded Environmental Impacts Frame (Gridded EIF) is a publicly
+            accessible data product that aggregates restricted Census microdata in
+            ways that preserve privacy and maintain analytical consistency,
+            providing counts of the population by race and ethnicity, sex, and age,
+            as well as by race and ethnicity and household income decile.
           </p>
 
           <div style="max-width:640px;margin-top:28px;position:relative">
@@ -89,62 +90,86 @@ export function Landing({ cat, go, places }) {
 
       <section class="section section-soft">
         <div class="wrap">
-          <p class="eyebrow">Why gridded data</p>
+          <p class="eyebrow">About the data</p>
+          <p style="max-width:none;margin:0 0 26px;font-size:1.06rem">
+            The Gridded EIF offers substantial benefits over traditional aggregated
+            place-based data.
+          </p>
           <div class="grid3">
             <div>
-              <h3>Intersectional</h3>
+              <h3>Intersectional characteristics</h3>
               <p class="small muted">
-                The data enable distributional analysis by intersectional
-                characteristics, such as by race <em>and</em> income — not one
-                dimension at a time.
+                The Gridded EIF enables distributional analysis across intersectional
+                characteristics for nearly the entire U.S. population. Restricted
+                microdata are collapsed by race, sex, and age groups (under 18,
+                18–64, and 65+), and by race <em>and</em> income deciles.
               </p>
             </div>
             <div>
-              <h3>Timely</h3>
+              <h3>High-frequency temporal coverage</h3>
               <p class="small muted">
-                The underlying administrative records are updated more frequently
-                than most aggregate demographic data. American Community Survey
-                5-year tables draw on survey responses from several years back.
+                The administrative records underlying the Gridded EIF are updated
+                more frequently than most aggregated demographic data. American
+                Community Survey 5-year tables, for example, draw on survey
+                responses from several years back. Close to the entire population
+                is covered by the restricted EIF residential history file.
               </p>
             </div>
             <div>
-              <h3>Flexible</h3>
+              <h3>Flexible aggregation</h3>
               <p class="small muted">
-                Most individuals in the frame are geocoded to precise latitude and
-                longitude, allowing aggregation to any geographic unit — not only
-                those the Census Bureau defines.
+                Most individuals in the restricted EIF are geocoded to precise
+                latitude and longitude, allowing aggregation to any geographic
+                unit. The Gridded EIF assigns these individuals to a grid point on
+                a fixed 0.01-degree grid, approximately 1 km² in North America.
               </p>
             </div>
           </div>
-          <p class="small muted" style="margin-top:20px;max-width:74ch">
-            Aggregating to units of fixed size, such as a geographic grid, rather
-            than fixed population, such as census tracts, can help when analysing
-            hazards that do not align with administrative boundaries.
+          <p class="small muted" style="margin-top:22px;max-width:78ch">
+            This site does that aggregation for you. It takes the published grid and
+            rolls it up to standard geographies — nation, state, county, metro area,
+            PUMA, commuting zone, and ZIP code tabulation area — for every year and
+            demographic breakdown, so you can query, filter, download, and cite
+            without running a spatial join yourself. Start from${' '}
+            <a href="?v=explore">Query Data</a>, take whole files from${' '}
+            <a href="?v=data">Download Data</a>, or read how the aggregation works in
+            the <a href="?v=docs">documentation</a>.
           </p>
         </div>
       </section>
 
       <section class="section">
         <div class="wrap">
+          <p class="eyebrow">Working with these counts</p>
+          <p style="max-width:78ch;margin:0 0 22px;font-size:1.06rem">
+            Two features of the Gridded EIF shape every figure on this site. Both
+            follow from the privacy protection applied before publication, and
+            neither is a property of this aggregation.
+          </p>
           <div class="grid2">
             <div class="card">
-              <h3>Noise infusion</h3>
+              <h3>Noise injection</h3>
               <p class="small muted">
-                Grid points represent very small geographic locations, so a small
-                amount of noise is added to each statistic. It can be thought of as
-                "on the order of rounding" — a degree of coarsening similar to the
+                The grid points used in the Gridded EIF represent very small
+                geographic areas, so a small amount of noise is added to each
+                statistic. This noise, injected to protect the privacy of
+                individuals in the underlying microdata, can be thought of as
+                “on the order of rounding” — a degree of coarsening similar to the
                 rounding schemes used for official Census tabulations. The noise
-                typically nets out when aggregating grid points to larger
+                typically nets out when grid points are aggregated to larger
                 geographies.
               </p>
             </div>
             <div class="card">
-              <h3>Two published counts</h3>
+              <h3>Two data options</h3>
               <p class="small muted">
-                Both raw noisy counts and postprocessed counts are provided,
-                allowing users to apply alternative postprocessing algorithms if
-                they wish. This site selects a default by the size of the geography
-                and reports which is in use.
+                Both raw (noise-injected) counts and post-processed counts are
+                provided. The raw counts can include negative cell values from the
+                noise-injection process. The post-processing algorithm ensures that
+                cell values are non-negative: small noisy cells are pooled by race
+                within each 1-degree grid point and redistributed, and any residual
+                negatives are set to zero. This site selects a default based on the
+                size of the geography and reports which version is in use.
               </p>
             </div>
           </div>

@@ -33,4 +33,10 @@ export const SITE = {
   org: 'Environmental Inequality Lab',
   orgUrl: 'https://environmental-inequality-lab.org',
   repo: 'https://github.com/Environmental-Inequality-Lab/gridded-eif',
+  author: 'Grant M. Seiter',
+  // TODO: replace with the real personal site before the next deploy.
+  authorUrl: 'https://environmental-inequality-lab.org',
+  // Public address of this site, used in the citation. Update if the site moves
+  // to a path under the EIL domain.
+  url: 'https://environmental-inequality-lab.github.io/gridded-eif/',
 };
