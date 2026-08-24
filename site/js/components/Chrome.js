@@ -45,7 +45,7 @@ export function Footer({ cat }) {
             <p class="small" style="margin-top:.6rem">
               Built from the U.S. Census Bureau's Gridded Environmental Impacts Frame,
               an experimental data product. Counts derive from administrative records
-              and will not match the Decennial Census or Population Estimates Program.
+              and may not match the Decennial Census or Population Estimates Program.
             </p>
             <div style="margin-top:.6rem">
               <a href=${SITE.repo}>Source code</a>
@@ -79,10 +79,10 @@ export function Footer({ cat }) {
         </div>
         <p class="small muted" style="margin:22px 0 0;padding-top:16px;
              border-top:1px solid var(--line);max-width:none">
-          <strong>Disclaimer:</strong> This content is presented to inform interested
-          parties of research and to encourage discussion. Any opinions and conclusions
-          expressed herein are those of the author(s) and do not reflect the views of
-          the U.S. Census Bureau.
+          <strong>Disclaimer:</strong> This website presents and aggregates data from a
+          U.S. Census Bureau data product. The presentation, analysis, and
+          interpretation of these data are the responsibility of the site authors and
+          do not reflect the views of the U.S. Census Bureau.
         </p>
       </div>
     </footer>

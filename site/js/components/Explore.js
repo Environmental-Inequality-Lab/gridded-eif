@@ -19,7 +19,13 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
 
   const ds = cat.datasets[state.d];
   const years = yearsFor(cat, state.d, state.g);
-  const year = state.y ?? years[years.length - 1];
+  // Newest final year, not simply the newest: landing on the nowcast would make
+  // the first figure a visitor sees provisional.
+  const finalYears = years.filter((y) => !(ds?.preliminary_years || []).includes(y));
+  const defaultYear = (finalYears.length ? finalYears : years)[
+    (finalYears.length ? finalYears : years).length - 1
+  ];
+  const year = state.y ?? defaultYear;
   const prelim = isPreliminary(cat, state.d, year);
   const preliminaryYears = ds?.preliminary_years || [];
 
@@ -199,9 +205,10 @@ export function Explore({ cat, state, go, toggleFacet, places }) {
       ${prelim && html`
         <div style="margin-bottom:14px">
           <${Notice} kind="warn">
-            <strong>${year} is preliminary.</strong> This vintage is built from the most
-            recent tax filings and will be revised. It is not comparable to the final
-            years without care, and should not be cited as settled.
+              <strong>${year} is preliminary.</strong> A “nowcast” version of the EIF.
+              This near-real-time analysis starts from the most recent EIF residential
+              histories and then updates residential locations for all individuals who
+              had filed their tax year 2024 return as of the spring of 2025.
           <//>
         </div>`}
 

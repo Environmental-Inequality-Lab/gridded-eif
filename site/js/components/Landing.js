@@ -125,26 +125,25 @@ export function Landing({ cat, go, places }) {
               </p>
             </div>
           </div>
-          <p class="small muted" style="margin-top:22px;max-width:78ch">
-            This site does that aggregation for you. It takes the published grid and
-            rolls it up to standard geographies — nation, state, county, metro area,
-            PUMA, commuting zone, and ZIP code tabulation area — for every year and
-            demographic breakdown, so you can query, filter, download, and cite
-            without running a spatial join yourself. Start from${' '}
-            <a href="?v=explore">Query Data</a>, take whole files from${' '}
-            <a href="?v=data">Download Data</a>, or read how the aggregation works in
-            the <a href="?v=docs">documentation</a>.
+          <p style="margin-top:22px;max-width:none">
+            This site does the geographic aggregation for you. We take the raw
+            published grid and roll it up to standard geographies—nation, state,
+            county, metro area, PUMA, commuting zone, and ZIP Code Tabulation
+            Area—for every year and demographic breakdown, so you can query, filter,
+            download, and cite the data without running a spatial join yourself.
+            Start with <a href="?v=explore">Query Data</a>, download whole files
+            from <a href="?v=data">Download Data</a>, or read about how the
+            aggregation works in the <a href="?v=docs">documentation</a>.
           </p>
         </div>
       </section>
 
       <section class="section">
         <div class="wrap">
-          <p class="eyebrow">Working with these counts</p>
-          <p style="max-width:78ch;margin:0 0 22px;font-size:1.06rem">
-            Two features of the Gridded EIF shape every figure on this site. Both
-            follow from the privacy protection applied before publication, and
-            neither is a property of this aggregation.
+          <p class="eyebrow">Working with these data</p>
+          <p style="max-width:none;margin:0 0 22px;font-size:1.06rem">
+            To protect the privacy of individuals in the underlying microdata, we add
+            a small amount of noise to each statistic. Two data options are provided.
           </p>
           <div class="grid2">
             <div class="card">
