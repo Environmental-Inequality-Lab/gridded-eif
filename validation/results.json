@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-08-28T19:54:50+00:00",
-    "commit": "288b71ed5e99aee1a005bf94b3f06ce879b55cda",
+    "generated_at": "2026-08-28T20:27:36+00:00",
+    "commit": "03f550167d9c696e2fe79a4f5e1144fda3bf67be",
     "commit_dirty": false,
     "pipeline_version": "1.0.0",
     "registry_version": "1.0.0",
@@ -438,7 +438,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 2.466741036000002,
+      "runtime_s": 2.2218324890000076,
       "error": null
     },
     {
@@ -895,7 +895,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 64.252421578,
+      "runtime_s": 91.713427808,
       "error": null
     },
     {
@@ -1273,7 +1273,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 43.135407413000024,
+      "runtime_s": 55.47418882399998,
       "error": null
     },
     {
@@ -1281,119 +1281,1003 @@
       "section": "A",
       "title": "Published artifacts resolve and match their advertised size",
       "tier": 2,
-      "status": "fail",
+      "status": "pass",
       "claim": "Every file the published catalog advertises exists at the URL given, returns HTTP 200, and is exactly the number of bytes the catalog claims.",
       "method": "One HTTP HEAD request per catalog entry \u2014 per-year partitions, all-years files, and crosswalks \u2014 comparing the reported content length against the size recorded in the catalog.",
       "interpretation": "The catalog is fetched by the site at runtime and is the only index of what exists. An entry that does not resolve is a broken download for a user; one whose size disagrees means the catalog and the object store have diverged, which usually indicates a publish that partially failed. A response carrying no content length is reported separately from a size mismatch, because that is a fact about the response rather than about the file.",
-      "metrics": [],
+      "metrics": [
+        {
+          "label": "Per-year partitions advertised",
+          "value": 364,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "All-years files advertised",
+          "value": 14,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Crosswalks advertised",
+          "value": 7,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Resolving at the advertised size",
+          "value": 385,
+          "unit": "",
+          "expected": 385
+        }
+      ],
       "tables": [],
       "figures": [],
       "sql": [],
-      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
-      "runtime_s": 0.0012609629999928984,
-      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/provenance.py\", line 302, in a4_catalog_resolves\n    cat = ctx.catalog()\n          ^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+      "skipped_because": null,
+      "runtime_s": 5.475584144999971,
+      "error": null
     },
     {
       "id": "A6",
       "section": "A",
       "title": "Version coherence across the four version lines",
       "tier": 2,
-      "status": "fail",
+      "status": "pass",
       "claim": "The site, pipeline, schema contract, and derived data versions recorded in the published catalog agree with the repository they are supposed to have been built from, and every derived URL sits under the declared derived version prefix.",
       "method": "The four version fields in the published catalog are compared against the values the repository declares, and every entry URL is checked for the derived version prefix. The catalog committed to the repository is compared against the published one separately.",
       "interpretation": "Disagreement means the published data was built from a different revision than the one being read, so nothing else in this report can be attributed to a known state of the code. The committed \\texttt{site/catalog.json} is a development fallback only --- the site fetches the live catalog at runtime --- so a difference there affects local development rather than users, but anyone testing with \\texttt{?catalog=./catalog.json} is validating against data that may no longer be published.",
-      "metrics": [],
-      "tables": [],
+      "metrics": [
+        {
+          "label": "Version lines disagreeing",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        },
+        {
+          "label": "Entry URLs outside the derived version prefix",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        },
+        {
+          "label": "Committed catalog differs from published",
+          "value": "no",
+          "unit": "",
+          "expected": "no"
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Declared versions, repository against published catalog",
+          "columns": [
+            "Version line",
+            "Repository",
+            "Published catalog",
+            "Agree"
+          ],
+          "rows": [
+            [
+              "pipeline version",
+              "1.0.0",
+              "1.0.0",
+              "yes"
+            ],
+            [
+              "registry version",
+              "1.0.0",
+              "1.0.0",
+              "yes"
+            ],
+            [
+              "derived version",
+              "v1",
+              "v1",
+              "yes"
+            ],
+            [
+              "catalog version",
+              "1.1.0",
+              "1.1.0",
+              "yes"
+            ]
+          ],
+          "align": "llll",
+          "note": null,
+          "numeric_columns": [],
+          "label": "tab:a6-versions"
+        }
+      ],
       "figures": [],
       "sql": [],
-      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
-      "runtime_s": 0.0007529509999812944,
-      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/provenance.py\", line 456, in a6_versions\n    cat = ctx.catalog()\n          ^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+      "skipped_because": null,
+      "runtime_s": 0.0006707060000508136,
+      "error": null
     },
     {
       "id": "C1",
       "section": "C",
       "title": "Crosswalk coverage of every published year",
       "tier": 2,
-      "status": "fail",
+      "status": "pass",
       "claim": "The crosswalk assigns a geography to every populated grid cell that lies within the United States, in every published year. Aggregation is therefore lossless except for cells that fall outside the country by more than the declared snap radius, which are excluded deliberately and counted separately.",
       "method": "Each source file is aggregated to one row per populated grid cell and joined against the county crosswalk. Cells with no match are collected across all dataset-years and adjudicated geometrically: the distance from each to the nearest county polygon is measured in EPSG:5070, and a cell counts as a legitimate exclusion only if that distance exceeds the snap radius the registry declares.",
       "interpretation": "Aggregation inner-joins each year's source against the crosswalk, so a cell the crosswalk lacks is discarded silently along with its population --- a partition built that way is a valid file with plausible numbers in it. Testing this on the year a crosswalk was built from cannot fail, which is why every published year is tested. Cells beyond the snap radius are outside the country and excluded on purpose; they are adjudicated by distance rather than against a list, so the check cannot be satisfied by a growing set of exceptions. Any unassigned cell inside the radius is population missing from the published totals.",
-      "metrics": [],
-      "tables": [],
+      "metrics": [
+        {
+          "label": "Published dataset-years checked",
+          "value": 52,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Dataset-years with unassigned cells",
+          "value": 4,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Distinct cells unassigned",
+          "value": 1,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "\u2026beyond the snap radius, excluded deliberately",
+          "value": 1,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "\u2026inside the snap radius, unaccounted for",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        },
+        {
+          "label": "Snap radius",
+          "value": 25.0,
+          "unit": "km",
+          "expected": null
+        },
+        {
+          "label": "Farthest unaccounted-for cell from a polygon",
+          "value": "n/a",
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Largest single-year shortfall",
+          "value": 17.0,
+          "unit": "people",
+          "expected": null
+        },
+        {
+          "label": "\u2026as a share of that year's source total",
+          "value": 5e-06,
+          "unit": "%",
+          "expected": null
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Grid cells and population unassigned by the crosswalk",
+          "columns": [
+            "Dataset",
+            "Year",
+            "Cells in source",
+            "Cells missing",
+            "People dropped",
+            "Loss (\\%)"
+          ],
+          "rows": [
+            [
+              "ageracesex",
+              2000,
+              2300604,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2001,
+              2180995,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2002,
+              2223632,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2003,
+              2286972,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2004,
+              2318312,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2005,
+              2366497,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2006,
+              2473172,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2007,
+              2430241,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2008,
+              2471826,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2009,
+              2558298,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2010,
+              2568944,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2011,
+              2551866,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2012,
+              2551372,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2013,
+              2547992,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2014,
+              2577969,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2015,
+              2600809,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2016,
+              2602674,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2017,
+              2604272,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2018,
+              2607807,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2019,
+              2605784,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2020,
+              2612800,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2021,
+              2611610,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2022,
+              2611734,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2023,
+              2606922,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "ageracesex",
+              2024,
+              2606191,
+              1,
+              17.0,
+              5.23974932274853e-06
+            ],
+            [
+              "ageracesex",
+              2025,
+              2625835,
+              1,
+              17.0,
+              5.070236162235412e-06
+            ],
+            [
+              "raceincome",
+              2000,
+              2300604,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2001,
+              2180995,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2002,
+              2223632,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2003,
+              2286972,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2004,
+              2318312,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2005,
+              2366497,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2006,
+              2473172,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2007,
+              2430241,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2008,
+              2471826,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2009,
+              2558298,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2010,
+              2568944,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2011,
+              2551866,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2012,
+              2551372,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2013,
+              2547992,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2014,
+              2577969,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2015,
+              2600809,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2016,
+              2602674,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2017,
+              2604272,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2018,
+              2607807,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2019,
+              2605784,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2020,
+              2612800,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2021,
+              2611610,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2022,
+              2611734,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2023,
+              2606922,
+              0,
+              0.0,
+              0.0
+            ],
+            [
+              "raceincome",
+              2024,
+              2606191,
+              1,
+              11.0,
+              3.390229510801994e-06
+            ],
+            [
+              "raceincome",
+              2025,
+              2625835,
+              1,
+              11.0,
+              3.28085087423849e-06
+            ]
+          ],
+          "align": "llrrrr",
+          "note": "Loss is the share of that dataset-year's source national total that never reaches any published partition.",
+          "numeric_columns": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "label": "tab:c1-coverage"
+        }
+      ],
       "figures": [],
-      "sql": [],
-      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
-      "runtime_s": 0.0009323070000277767,
-      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 101, in c1_cell_coverage\n    xw = _crosswalk(ctx, \"county\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 25, in _crosswalk\n    return ctx.crosswalk_source(geography)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 189, in crosswalk_source\n    return (self.catalog().get(\"crosswalks\") or {}).get(geography)\n            ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+      "sql": [
+        "WITH src AS (\n            SELECT grid_lon, grid_lat, sum(n_noise) AS pop\n            FROM read_parquet('<source file>') GROUP BY 1, 2\n        )\n        SELECT count(*)                                        AS cells,\n               sum(src.pop)                                    AS pop,\n               count(*) FILTER (WHERE x.geo_id IS NULL)        AS cells_missing,\n               coalesce(sum(src.pop) FILTER (WHERE x.geo_id IS NULL), 0) AS pop_missing\n        FROM src LEFT JOIN read_parquet('<crosswalk>') x USING (grid_lon, grid_lat)"
+      ],
+      "skipped_because": null,
+      "runtime_s": 41.63586887400004,
+      "error": null
     },
     {
       "id": "C2",
       "section": "C",
       "title": "Each grid cell is assigned to exactly one unit",
       "tier": 2,
-      "status": "fail",
+      "status": "pass",
       "claim": "No grid cell appears twice in a crosswalk. A duplicated cell would be counted once for each unit it appears under, inflating totals in a way that no total-preserving check would catch.",
       "method": "For each crosswalk, the number of rows is compared against the number of distinct grid cells.",
       "interpretation": "A cell whose centroid falls exactly on a shared polygon edge matches more than one unit in the spatial join; the pipeline resolves this by keeping the first match. This check confirms the resolution is applied consistently and that no duplicate survives into a published file. A duplicate would inflate the total of every geography it appears in while leaving the national total looking correct.",
-      "metrics": [],
-      "tables": [],
+      "metrics": [
+        {
+          "label": "Crosswalks checked",
+          "value": 7,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Duplicate cell assignments",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Cell uniqueness by crosswalk",
+          "columns": [
+            "Geography",
+            "Rows",
+            "Distinct cells",
+            "Units",
+            "Duplicates"
+          ],
+          "rows": [
+            [
+              "cbsa",
+              2021331,
+              2021331,
+              925,
+              0
+            ],
+            [
+              "county",
+              3021989,
+              3021989,
+              3144,
+              0
+            ],
+            [
+              "czone2020",
+              3021989,
+              3021989,
+              588,
+              0
+            ],
+            [
+              "nation",
+              3021990,
+              3021990,
+              1,
+              0
+            ],
+            [
+              "puma",
+              3021989,
+              3021989,
+              2462,
+              0
+            ],
+            [
+              "state",
+              3021989,
+              3021989,
+              51,
+              0
+            ],
+            [
+              "zcta",
+              3010165,
+              3010165,
+              32556,
+              0
+            ]
+          ],
+          "align": "lrrrr",
+          "note": null,
+          "numeric_columns": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "label": "tab:c2-uniqueness"
+        }
+      ],
       "figures": [],
       "sql": [],
-      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
-      "runtime_s": 0.0007360399999924994,
-      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 223, in c2_uniqueness\n    for geography in ctx.crosswalk_geographies():\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 196, in crosswalk_geographies\n    return sorted(self.catalog().get(\"crosswalks\") or {})\n                  ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+      "skipped_because": null,
+      "runtime_s": 4.986070820000009,
+      "error": null
     },
     {
       "id": "C3",
       "section": "C",
       "title": "Border-cell snapping, and how much population depends on it",
       "tier": 2,
-      "status": "fail",
+      "status": "info",
       "claim": "Cells whose centroid falls outside every polygon of a complete-coverage geography are recovered by snapping to the nearest unit rather than dropped, and the amount of population this recovers is stated rather than assumed.",
       "method": "The \\texttt{snapped} flag carried by each crosswalk is counted per geography. The population riding on it is measured by joining the 2022 source file to the county crosswalk and summing the raw measure over snapped cells.",
       "interpretation": "Recorded rather than judged. Snapping applies only where a geography tiles the country completely, so an unmatched cell must belong somewhere; for partial-coverage geographies such as metropolitan areas an unmatched cell is a genuine absence and is dropped instead. The snapped cells are a systematic border artifact --- cells straddling the Canadian and Mexican frontiers whose centroids land abroad --- so dropping them would undercount border communities specifically, which for an environmental-inequality product are populations of interest.",
-      "metrics": [],
-      "tables": [],
+      "metrics": [
+        {
+          "label": "Snapped cell assignments, all crosswalks",
+          "value": 1140,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Population recovered at county level, 2022",
+          "value": 14214,
+          "unit": "people",
+          "expected": null
+        },
+        {
+          "label": "Snap radius",
+          "value": 25.0,
+          "unit": "km",
+          "expected": null
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Snapped cell assignments by crosswalk",
+          "columns": [
+            "Geography",
+            "Coverage",
+            "Cells",
+            "Snapped",
+            "Snapped (\\%)"
+          ],
+          "rows": [
+            [
+              "cbsa",
+              "partial",
+              2021331,
+              0,
+              0.0
+            ],
+            [
+              "county",
+              "complete",
+              3021989,
+              285,
+              0.009430874831112886
+            ],
+            [
+              "czone2020",
+              "complete",
+              3021989,
+              285,
+              0.009430874831112886
+            ],
+            [
+              "nation",
+              "complete",
+              3021990,
+              0,
+              0.0
+            ],
+            [
+              "puma",
+              "complete",
+              3021989,
+              285,
+              0.009430874831112886
+            ],
+            [
+              "state",
+              "complete",
+              3021989,
+              285,
+              0.009430874831112886
+            ],
+            [
+              "zcta",
+              "partial",
+              3010165,
+              0,
+              0.0
+            ]
+          ],
+          "align": "llrrr",
+          "note": null,
+          "numeric_columns": [
+            2,
+            3,
+            4
+          ],
+          "label": "tab:c3-snapping"
+        }
+      ],
       "figures": [],
       "sql": [],
-      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
-      "runtime_s": 0.0007932269999741948,
-      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 279, in c3_snapping\n    for geography in ctx.crosswalk_geographies():\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 196, in crosswalk_geographies\n    return sorted(self.catalog().get(\"crosswalks\") or {})\n                  ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+      "skipped_because": null,
+      "runtime_s": 0.6844724950000227,
+      "error": null
     },
     {
       "id": "C4",
       "section": "C",
       "title": "Hierarchical consistency between independently built crosswalks",
       "tier": 2,
-      "status": "fail",
+      "status": "pass",
       "claim": "A cell contained by a county or PUMA polygon is contained by that unit's state: the first two digits of its identifier equal its state FIPS code. The crosswalks come from separate spatial joins against separate shapefiles, so agreement is an independent check on both.",
       "method": "Child and parent crosswalks are joined on grid cell and their identifiers compared. Disagreements are partitioned three ways: cells placed by containment in both crosswalks, cells where at least one placement came from nearest-polygon snapping, and cells where the source shapefiles themselves conflict --- the last confirmed by re-running containment against the TIGER geometry rather than inferred.",
       "interpretation": "Containment is transitive and must nest: a cell inside a county polygon is inside that county's state as a matter of geometry, and a disagreement there means one of the two joins is wrong. Two other cases are not defects. Snapping is decided per level, so near a border the nearest PUMA and the nearest state may sit in different states without either result being incorrect. And TIGER's layers are published separately and are not guaranteed mutually consistent, most visibly along rivers whose channel has moved since the boundary was drawn; there both joins are correct with respect to their own input. Only the unexplained remainder counts against this check. Commuting zones are excluded entirely: they are derived by remapping county identifiers rather than by their own spatial join, so agreement with county is true by construction and would be evidence of nothing.",
-      "metrics": [],
-      "tables": [],
+      "metrics": [
+        {
+          "label": "Nesting relationships checked",
+          "value": 2,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Disagreements explained by the TIGER layers",
+          "value": 1,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Disagreements involving a snapped placement",
+          "value": 0,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Unexplained disagreements between contained cells",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Nesting agreement between independently built crosswalks",
+          "columns": [
+            "Relationship",
+            "Cells compared",
+            "Contained, not nesting",
+            "Explained by TIGER",
+            "Snapped, not nesting"
+          ],
+          "rows": [
+            [
+              "county \u2192 state",
+              3021989,
+              0,
+              0,
+              0
+            ],
+            [
+              "puma \u2192 state",
+              3021989,
+              1,
+              1,
+              0
+            ]
+          ],
+          "align": "lrrrr",
+          "note": null,
+          "numeric_columns": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "label": "tab:c4-hierarchy"
+        }
+      ],
       "figures": [],
       "sql": [],
-      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
-      "runtime_s": 0.0007832269999994423,
-      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 413, in c4_hierarchy\n    xws = {g: ctx.crosswalk_source(g) for g in ctx.crosswalk_geographies()}\n                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 196, in crosswalk_geographies\n    return sorted(self.catalog().get(\"crosswalks\") or {})\n                  ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+      "skipped_because": null,
+      "runtime_s": 68.17354104200001,
+      "error": null
     },
     {
       "id": "C5",
       "section": "C",
       "title": "Grid geometry is as documented",
       "tier": 2,
-      "status": "fail",
+      "status": "pass",
       "claim": "Grid cell coordinates are centroids on a 0.01 degree lattice offset by 0.005, stored as strings, spanning the continental United States plus Alaska and Hawaii and no territory.",
       "method": "Coordinate column types are read from the source schema. Every distinct cell in the 2022 file is tested arithmetically for the documented lattice offset, rather than by string suffix, so the test holds regardless of how many decimal places a file happens to print. Territory assignment is counted from the county crosswalk.",
       "interpretation": "Coordinates are stored as strings deliberately: the join between source and crosswalk is an equality test, and float equality silently drops rows. A departure from the lattice would mean the grid is not what the registry describes and the centroid-assignment method rests on a false premise. The longitude range spans the Aleutian crossing of the antimeridian, so its extremes are not a contiguous interval.",
-      "metrics": [],
-      "tables": [],
+      "metrics": [
+        {
+          "label": "Distinct populated cells, 2022",
+          "value": 2611734,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Grid resolution",
+          "value": 0.01,
+          "unit": "degrees",
+          "expected": null
+        },
+        {
+          "label": "Declared centroid offset",
+          "value": 0.005,
+          "unit": "degrees",
+          "expected": null
+        },
+        {
+          "label": "Departures from the documented specification",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Grid geometry against its documented specification",
+          "columns": [
+            "Property",
+            "Documented",
+            "Observed"
+          ],
+          "rows": [
+            [
+              "Coordinate storage type",
+              "VARCHAR",
+              "grid_lon=VARCHAR, grid_lat=VARCHAR"
+            ],
+            [
+              "Longitude off the 0.005 lattice",
+              "0 cells",
+              "0 cells"
+            ],
+            [
+              "Latitude off the 0.005 lattice",
+              "0 cells",
+              "0 cells"
+            ],
+            [
+              "Longitude range",
+              "CONUS + AK + HI",
+              "-176.655 to -66.955"
+            ],
+            [
+              "Latitude range",
+              "CONUS + AK + HI",
+              "19.005 to 71.325"
+            ],
+            [
+              "Cells assigned to a territory",
+              "0",
+              "0"
+            ]
+          ],
+          "align": "lll",
+          "note": null,
+          "numeric_columns": [],
+          "label": "tab:c5-grid"
+        }
+      ],
       "figures": [],
       "sql": [],
-      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
-      "runtime_s": 0.0007702830000084759,
-      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 502, in c5_grid_geometry\n    xw = _crosswalk(ctx, \"county\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 25, in _crosswalk\n    return ctx.crosswalk_source(geography)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 189, in crosswalk_source\n    return (self.catalog().get(\"crosswalks\") or {}).get(geography)\n            ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+      "skipped_because": null,
+      "runtime_s": 1.0233628830000043,
+      "error": null
     },
     {
       "id": "C6",
@@ -1607,10 +2491,17 @@
           "label": "tab:c6-drift"
         }
       ],
-      "figures": [],
+      "figures": [
+        {
+          "caption": "Populated grid cells by year. The dark band is the number of cells present in that year but absent from the 2022 file. A crosswalk built from the union of all years has no such band.",
+          "path": "figures/c6-cell-drift.pdf",
+          "label": "fig:c6-cell-drift",
+          "width": "\\textwidth"
+        }
+      ],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 27.355429568999966,
+      "runtime_s": 28.206829982000045,
       "error": null
     },
     {
@@ -1618,34 +2509,102 @@
       "section": "C",
       "title": "Fitness of the published crosswalk for its advertised purpose",
       "tier": 2,
-      "status": "fail",
+      "status": "pass",
       "claim": "The site offers the crosswalk so users can aggregate the Census source grids it does not serve. It should therefore cover the union of populated cells across every published dataset-year, not the cells of any one year.",
       "method": "The distinct cells of every published source file are unioned in a single scan and joined against the county crosswalk. Cells with no match are adjudicated by distance to the nearest county polygon, on the same basis as C1.",
       "interpretation": "A user following the site's own instructions aggregates the raw grid with this file, so any cell it cannot assign is population that silently disappears from their analysis rather than ours. The pollutant and extreme-weather grids are not included in the union: they are not yet enabled in the registry and their cell coverage differs again, so a shortfall measured here is a lower bound on what a user of those files would encounter.",
-      "metrics": [],
+      "metrics": [
+        {
+          "label": "Union of populated cells, all datasets and years",
+          "value": 3021990,
+          "unit": "cells",
+          "expected": null
+        },
+        {
+          "label": "Rows in the county crosswalk",
+          "value": 3021989,
+          "unit": "cells",
+          "expected": null
+        },
+        {
+          "label": "Union cells the crosswalk cannot assign",
+          "value": 1,
+          "unit": "cells",
+          "expected": null
+        },
+        {
+          "label": "\u2026beyond the snap radius, outside the country",
+          "value": 1,
+          "unit": "cells",
+          "expected": null
+        },
+        {
+          "label": "\u2026inside the snap radius, a genuine gap",
+          "value": 0,
+          "unit": "cells",
+          "expected": 0
+        }
+      ],
       "tables": [],
       "figures": [],
       "sql": [],
-      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
-      "runtime_s": 0.0012382410000100208,
-      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 672, in c7_crosswalk_fitness\n    xw = _crosswalk(ctx, \"county\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 25, in _crosswalk\n    return ctx.crosswalk_source(geography)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 189, in crosswalk_source\n    return (self.catalog().get(\"crosswalks\") or {}).get(geography)\n            ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+      "skipped_because": null,
+      "runtime_s": 28.687702763999994,
+      "error": null
     },
     {
       "id": "C8",
       "section": "C",
       "title": "Spatial concentration of any dropped population",
       "tier": 2,
-      "status": "fail",
+      "status": "pass",
       "claim": "Population the crosswalk fails to assign is reported by state, so that a national figure cannot conceal a loss falling heavily on one place.",
       "method": "Cells unassigned in the most recent final year are located by point-in-polygon against the state boundaries and aggregated. The share is computed against what each state's total would have been had no cell been dropped, using the published state partition as the denominator.",
       "interpretation": "A national loss expressed as a fraction of a percent invites the reading that it is a rounding error, which holds only if the loss is diffuse. This check makes the distribution visible: a loss concentrated in particular states distorts the geographic pattern the product exists to describe whatever its national magnitude, and grid cells vary enormously in population, so a small number of dropped cells can carry a large number of people. Where every dropped cell falls outside all state polygons there is no distribution to report, and whether excluding those cells is correct is adjudicated in C1 rather than here.",
-      "metrics": [],
+      "metrics": [
+        {
+          "label": "Year examined",
+          "value": 2024,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Cells dropped",
+          "value": 1,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "People dropped",
+          "value": 17,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Heaviest single dropped cell",
+          "value": 17,
+          "unit": "people",
+          "expected": null
+        },
+        {
+          "label": "Cells falling outside every state polygon",
+          "value": 1,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "States affected",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        }
+      ],
       "tables": [],
       "figures": [],
       "sql": [],
-      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
-      "runtime_s": 0.001051259000007576,
-      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 746, in c8_loss_concentration\n    xw = _crosswalk(ctx, \"county\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 25, in _crosswalk\n    return ctx.crosswalk_source(geography)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 189, in crosswalk_source\n    return (self.catalog().get(\"crosswalks\") or {}).get(geography)\n            ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+      "skipped_because": null,
+      "runtime_s": 0.9252306380000164,
+      "error": null
     }
   ]
 }
