@@ -1,0 +1,1651 @@
+{
+  "metadata": {
+    "generated_at": "2026-08-28T19:54:50+00:00",
+    "commit": "288b71ed5e99aee1a005bf94b3f06ce879b55cda",
+    "commit_dirty": false,
+    "pipeline_version": "1.0.0",
+    "registry_version": "1.0.0",
+    "contract_version": "1.1.0",
+    "derived_version": "v1",
+    "python_version": "3.12.14",
+    "duckdb_version": "1.5.5",
+    "platform": "linux",
+    "tiers_run": [
+      0,
+      1,
+      2
+    ],
+    "sections_run": [
+      "A",
+      "C"
+    ],
+    "target": "the published product"
+  },
+  "results": [
+    {
+      "id": "A1",
+      "section": "A",
+      "title": "Source file manifest",
+      "tier": 2,
+      "status": "info",
+      "claim": "Every Census source file this product is built from is identified by URL, size, and publication date, so any figure in this report can be traced to the exact bytes it came from.",
+      "method": "One HTTP HEAD request per source file named by the registry, recording the reported size and modification date.",
+      "interpretation": "This check records rather than judges: it fails only if a file the registry names cannot be retrieved at all. A file that has been modified since a previous run will show a later modification date here, which is worth noticing --- the Census Bureau revises these files --- but is not itself an error. Content hashes are in A5; the Census file server publishes no checksum, so size and date are the strongest fingerprint available without downloading every file.",
+      "metrics": [
+        {
+          "label": "Source files named by the registry",
+          "value": 52,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Reachable",
+          "value": 52,
+          "unit": "",
+          "expected": 52
+        },
+        {
+          "label": "Total size",
+          "value": 3.55,
+          "unit": "GB",
+          "expected": null
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Census source files consumed by the published product",
+          "columns": [
+            "Dataset",
+            "Year",
+            "Bytes",
+            "Last modified",
+            "File"
+          ],
+          "rows": [
+            [
+              "ageracesex",
+              2000,
+              55062102,
+              "Tue, 11 Feb 2025 15:28:55 GMT",
+              "gridded_eif_pop_ageracesex_2000.parquet"
+            ],
+            [
+              "ageracesex",
+              2001,
+              53004720,
+              "Tue, 11 Feb 2025 15:29:32 GMT",
+              "gridded_eif_pop_ageracesex_2001.parquet"
+            ],
+            [
+              "ageracesex",
+              2002,
+              53889799,
+              "Tue, 11 Feb 2025 15:30:11 GMT",
+              "gridded_eif_pop_ageracesex_2002.parquet"
+            ],
+            [
+              "ageracesex",
+              2003,
+              55575607,
+              "Tue, 11 Feb 2025 15:30:50 GMT",
+              "gridded_eif_pop_ageracesex_2003.parquet"
+            ],
+            [
+              "ageracesex",
+              2004,
+              56592403,
+              "Tue, 11 Feb 2025 15:31:31 GMT",
+              "gridded_eif_pop_ageracesex_2004.parquet"
+            ],
+            [
+              "ageracesex",
+              2005,
+              58009848,
+              "Tue, 11 Feb 2025 15:32:12 GMT",
+              "gridded_eif_pop_ageracesex_2005.parquet"
+            ],
+            [
+              "ageracesex",
+              2006,
+              61886495,
+              "Tue, 11 Feb 2025 15:32:58 GMT",
+              "gridded_eif_pop_ageracesex_2006.parquet"
+            ],
+            [
+              "ageracesex",
+              2007,
+              60555151,
+              "Tue, 11 Feb 2025 15:33:36 GMT",
+              "gridded_eif_pop_ageracesex_2007.parquet"
+            ],
+            [
+              "ageracesex",
+              2008,
+              62099112,
+              "Tue, 11 Feb 2025 15:34:18 GMT",
+              "gridded_eif_pop_ageracesex_2008.parquet"
+            ],
+            [
+              "ageracesex",
+              2009,
+              65539546,
+              "Tue, 11 Feb 2025 15:35:03 GMT",
+              "gridded_eif_pop_ageracesex_2009.parquet"
+            ],
+            [
+              "ageracesex",
+              2010,
+              66149170,
+              "Tue, 11 Feb 2025 15:35:50 GMT",
+              "gridded_eif_pop_ageracesex_2010.parquet"
+            ],
+            [
+              "ageracesex",
+              2011,
+              67025906,
+              "Tue, 11 Feb 2025 15:36:37 GMT",
+              "gridded_eif_pop_ageracesex_2011.parquet"
+            ],
+            [
+              "ageracesex",
+              2012,
+              68060882,
+              "Tue, 11 Feb 2025 15:37:25 GMT",
+              "gridded_eif_pop_ageracesex_2012.parquet"
+            ],
+            [
+              "ageracesex",
+              2013,
+              68085774,
+              "Tue, 11 Feb 2025 15:38:16 GMT",
+              "gridded_eif_pop_ageracesex_2013.parquet"
+            ],
+            [
+              "ageracesex",
+              2014,
+              67245190,
+              "Tue, 11 Feb 2025 15:39:03 GMT",
+              "gridded_eif_pop_ageracesex_2014.parquet"
+            ],
+            [
+              "ageracesex",
+              2015,
+              69057243,
+              "Tue, 11 Feb 2025 15:39:50 GMT",
+              "gridded_eif_pop_ageracesex_2015.parquet"
+            ],
+            [
+              "ageracesex",
+              2016,
+              69471070,
+              "Tue, 11 Feb 2025 15:40:39 GMT",
+              "gridded_eif_pop_ageracesex_2016.parquet"
+            ],
+            [
+              "ageracesex",
+              2017,
+              69772170,
+              "Tue, 11 Feb 2025 15:41:27 GMT",
+              "gridded_eif_pop_ageracesex_2017.parquet"
+            ],
+            [
+              "ageracesex",
+              2018,
+              70402909,
+              "Tue, 11 Feb 2025 15:42:18 GMT",
+              "gridded_eif_pop_ageracesex_2018.parquet"
+            ],
+            [
+              "ageracesex",
+              2019,
+              71124870,
+              "Tue, 11 Feb 2025 15:43:08 GMT",
+              "gridded_eif_pop_ageracesex_2019.parquet"
+            ],
+            [
+              "ageracesex",
+              2020,
+              71692899,
+              "Tue, 11 Feb 2025 15:43:59 GMT",
+              "gridded_eif_pop_ageracesex_2020.parquet"
+            ],
+            [
+              "ageracesex",
+              2021,
+              71869170,
+              "Tue, 11 Feb 2025 15:44:50 GMT",
+              "gridded_eif_pop_ageracesex_2021.parquet"
+            ],
+            [
+              "ageracesex",
+              2022,
+              72293247,
+              "Tue, 11 Feb 2025 15:45:40 GMT",
+              "gridded_eif_pop_ageracesex_2022.parquet"
+            ],
+            [
+              "ageracesex",
+              2023,
+              72565776,
+              "Tue, 11 Feb 2025 15:46:30 GMT",
+              "gridded_eif_pop_ageracesex_2023.parquet"
+            ],
+            [
+              "ageracesex",
+              2024,
+              73731728,
+              "Tue, 22 Jul 2025 12:15:33 GMT",
+              "gridded_eif_pop_ageracesex_2024.parquet"
+            ],
+            [
+              "ageracesex",
+              2025,
+              74264279,
+              "Tue, 22 Jul 2025 12:15:37 GMT",
+              "gridded_eif_pop_ageracesex_2025_realtime.parquet"
+            ],
+            [
+              "raceincome",
+              2000,
+              58739984,
+              "Tue, 11 Feb 2025 15:47:43 GMT",
+              "gridded_eif_pop_raceincome_2000.parquet"
+            ],
+            [
+              "raceincome",
+              2001,
+              56952824,
+              "Tue, 11 Feb 2025 15:48:23 GMT",
+              "gridded_eif_pop_raceincome_2001.parquet"
+            ],
+            [
+              "raceincome",
+              2002,
+              57861073,
+              "Tue, 11 Feb 2025 15:49:04 GMT",
+              "gridded_eif_pop_raceincome_2002.parquet"
+            ],
+            [
+              "raceincome",
+              2003,
+              59696500,
+              "Tue, 11 Feb 2025 15:49:43 GMT",
+              "gridded_eif_pop_raceincome_2003.parquet"
+            ],
+            [
+              "raceincome",
+              2004,
+              60745798,
+              "Tue, 11 Feb 2025 15:50:27 GMT",
+              "gridded_eif_pop_raceincome_2004.parquet"
+            ],
+            [
+              "raceincome",
+              2005,
+              62616838,
+              "Tue, 11 Feb 2025 15:51:08 GMT",
+              "gridded_eif_pop_raceincome_2005.parquet"
+            ],
+            [
+              "raceincome",
+              2006,
+              66396473,
+              "Tue, 11 Feb 2025 15:51:56 GMT",
+              "gridded_eif_pop_raceincome_2006.parquet"
+            ],
+            [
+              "raceincome",
+              2007,
+              65328148,
+              "Tue, 11 Feb 2025 15:52:42 GMT",
+              "gridded_eif_pop_raceincome_2007.parquet"
+            ],
+            [
+              "raceincome",
+              2008,
+              66919878,
+              "Tue, 11 Feb 2025 15:53:28 GMT",
+              "gridded_eif_pop_raceincome_2008.parquet"
+            ],
+            [
+              "raceincome",
+              2009,
+              70363603,
+              "Tue, 11 Feb 2025 15:54:18 GMT",
+              "gridded_eif_pop_raceincome_2009.parquet"
+            ],
+            [
+              "raceincome",
+              2010,
+              71412128,
+              "Tue, 11 Feb 2025 15:55:08 GMT",
+              "gridded_eif_pop_raceincome_2010.parquet"
+            ],
+            [
+              "raceincome",
+              2011,
+              71635775,
+              "Tue, 11 Feb 2025 15:55:59 GMT",
+              "gridded_eif_pop_raceincome_2011.parquet"
+            ],
+            [
+              "raceincome",
+              2012,
+              72621633,
+              "Tue, 11 Feb 2025 15:56:51 GMT",
+              "gridded_eif_pop_raceincome_2012.parquet"
+            ],
+            [
+              "raceincome",
+              2013,
+              72304622,
+              "Tue, 11 Feb 2025 15:57:43 GMT",
+              "gridded_eif_pop_raceincome_2013.parquet"
+            ],
+            [
+              "raceincome",
+              2014,
+              72445271,
+              "Tue, 11 Feb 2025 15:58:34 GMT",
+              "gridded_eif_pop_raceincome_2014.parquet"
+            ],
+            [
+              "raceincome",
+              2015,
+              74648121,
+              "Tue, 11 Feb 2025 15:59:25 GMT",
+              "gridded_eif_pop_raceincome_2015.parquet"
+            ],
+            [
+              "raceincome",
+              2016,
+              75305366,
+              "Tue, 11 Feb 2025 16:00:18 GMT",
+              "gridded_eif_pop_raceincome_2016.parquet"
+            ],
+            [
+              "raceincome",
+              2017,
+              75811185,
+              "Tue, 11 Feb 2025 16:01:12 GMT",
+              "gridded_eif_pop_raceincome_2017.parquet"
+            ],
+            [
+              "raceincome",
+              2018,
+              76204554,
+              "Tue, 11 Feb 2025 16:02:06 GMT",
+              "gridded_eif_pop_raceincome_2018.parquet"
+            ],
+            [
+              "raceincome",
+              2019,
+              76418335,
+              "Tue, 11 Feb 2025 16:03:04 GMT",
+              "gridded_eif_pop_raceincome_2019.parquet"
+            ],
+            [
+              "raceincome",
+              2020,
+              78212378,
+              "Tue, 11 Feb 2025 16:03:57 GMT",
+              "gridded_eif_pop_raceincome_2020.parquet"
+            ],
+            [
+              "raceincome",
+              2021,
+              78196830,
+              "Tue, 11 Feb 2025 16:04:51 GMT",
+              "gridded_eif_pop_raceincome_2021.parquet"
+            ],
+            [
+              "raceincome",
+              2022,
+              78474125,
+              "Tue, 11 Feb 2025 16:05:46 GMT",
+              "gridded_eif_pop_raceincome_2022.parquet"
+            ],
+            [
+              "raceincome",
+              2023,
+              78688691,
+              "Tue, 11 Feb 2025 16:06:42 GMT",
+              "gridded_eif_pop_raceincome_2023.parquet"
+            ],
+            [
+              "raceincome",
+              2024,
+              80526832,
+              "Tue, 22 Jul 2025 12:15:43 GMT",
+              "gridded_eif_pop_raceincome_2024.parquet"
+            ],
+            [
+              "raceincome",
+              2025,
+              81661582,
+              "Tue, 22 Jul 2025 12:15:48 GMT",
+              "gridded_eif_pop_raceincome_2025_realtime.parquet"
+            ]
+          ],
+          "align": "llrll",
+          "note": null,
+          "numeric_columns": [
+            2
+          ],
+          "label": "tab:a1-manifest"
+        }
+      ],
+      "figures": [],
+      "sql": [],
+      "skipped_because": null,
+      "runtime_s": 2.466741036000002,
+      "error": null
+    },
+    {
+      "id": "A2",
+      "section": "A",
+      "title": "Schema contract conformance",
+      "tier": 2,
+      "status": "warn",
+      "claim": "Every source file matches the pinned schema contract \u2014 column names, column types, and category values \u2014 in every published year, not only the year the contract was derived from.",
+      "method": "Each source file's schema is read and compared against \\texttt{catalog/contracts/source-schema-v5.json}: required columns present and of the declared type, row count within the declared range, and no category value outside the declared set.",
+      "interpretation": "A violation means the upstream schema has moved and the pipeline is building against an assumption that no longer holds. The correct response is to update the contract deliberately and bump its version, never to loosen the check until it passes. Warnings are a weaker signal: a category the contract declares but the data does not contain is usually a genuine absence in that year, and a column present in the data but absent from the contract may mean new data has become available.",
+      "metrics": [
+        {
+          "label": "Contract version",
+          "value": "1.1.0",
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Describes source data version",
+          "value": "5.0",
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Source files checked",
+          "value": 52,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Conforming",
+          "value": 52,
+          "unit": "",
+          "expected": 52
+        },
+        {
+          "label": "Violations",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        },
+        {
+          "label": "Warnings",
+          "value": 1,
+          "unit": "",
+          "expected": null
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Schema contract conformance by source file",
+          "columns": [
+            "Dataset",
+            "Year",
+            "Rows",
+            "Result",
+            "Warnings"
+          ],
+          "rows": [
+            [
+              "ageracesex",
+              2000,
+              15437397,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2001,
+              14920696,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2002,
+              15194761,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2003,
+              15668722,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2004,
+              16013889,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2005,
+              16422385,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2006,
+              17425242,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2007,
+              17160284,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2008,
+              17623304,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2009,
+              18533927,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2010,
+              18701284,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2011,
+              18919413,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2012,
+              19178189,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2013,
+              19214376,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2014,
+              19076041,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2015,
+              19454193,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2016,
+              19650827,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2017,
+              19884417,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2018,
+              20059598,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2019,
+              20196044,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2020,
+              20553710,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2021,
+              20607480,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2022,
+              20780507,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2023,
+              20849590,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2024,
+              21135424,
+              "pass",
+              0
+            ],
+            [
+              "ageracesex",
+              2025,
+              21225308,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2000,
+              16128073,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2001,
+              15763720,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2002,
+              16089157,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2003,
+              16631104,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2004,
+              16989766,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2005,
+              17445348,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2006,
+              18389387,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2007,
+              18317810,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2008,
+              18768687,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2009,
+              19640994,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2010,
+              19841032,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2011,
+              19902723,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2012,
+              20272858,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2013,
+              20228698,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2014,
+              20431741,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2015,
+              20975779,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2016,
+              21177785,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2017,
+              21423032,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2018,
+              21619442,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2019,
+              21813059,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2020,
+              22206164,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2021,
+              22348343,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2022,
+              22467718,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2023,
+              22589974,
+              "pass",
+              0
+            ],
+            [
+              "raceincome",
+              2024,
+              23066667,
+              "pass",
+              1
+            ],
+            [
+              "raceincome",
+              2025,
+              23423476,
+              "pass",
+              0
+            ]
+          ],
+          "align": "llrlr",
+          "note": null,
+          "numeric_columns": [
+            2,
+            4
+          ],
+          "label": "tab:a2-schema"
+        },
+        {
+          "caption": "Contract warnings (non-fatal)",
+          "columns": [
+            "Dataset",
+            "Year",
+            "Detail"
+          ],
+          "rows": [
+            [
+              "raceincome",
+              2024,
+              "income_decile: contract categories absent from data [0]"
+            ]
+          ],
+          "align": "llp{0.55\\textwidth}",
+          "note": null,
+          "numeric_columns": [],
+          "label": null
+        }
+      ],
+      "figures": [],
+      "sql": [],
+      "skipped_because": null,
+      "runtime_s": 64.252421578,
+      "error": null
+    },
+    {
+      "id": "A3",
+      "section": "A",
+      "title": "Statistical invariants of the source data",
+      "tier": 2,
+      "status": "pass",
+      "claim": "In every source file the national total falls in a plausible band, the post-processed measure is nowhere negative, and post-processing preserves race totals \u2014 the three properties the contract asserts about the numbers themselves rather than the schema.",
+      "method": "Each source file is aggregated to a national total for both noise measures and to race margins for each, then compared against the bands and tolerances declared in the schema contract. The bands are declared in the contract, not chosen here.",
+      "interpretation": "These catch a class of failure a column check cannot: the schema is intact but the numbers have moved. Post-processing redistributes population within race groups, so race margins must survive it; a departure means the upstream algorithm has changed and the guidance this site gives about choosing between the two measures needs revisiting.",
+      "metrics": [
+        {
+          "label": "Source files checked",
+          "value": 52,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Satisfying every invariant",
+          "value": 52,
+          "unit": "",
+          "expected": 52
+        },
+        {
+          "label": "Plausible national total, lower bound",
+          "value": 150000000,
+          "unit": "people",
+          "expected": null
+        },
+        {
+          "label": "Plausible national total, upper bound",
+          "value": 360000000,
+          "unit": "people",
+          "expected": null
+        },
+        {
+          "label": "Race-total preservation tolerance",
+          "value": 1000,
+          "unit": "people",
+          "expected": null
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Statistical invariants by source file",
+          "columns": [
+            "Dataset",
+            "Year",
+            "National total (raw)",
+            "Result"
+          ],
+          "rows": [
+            [
+              "ageracesex",
+              2000,
+              244934051,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2001,
+              241814245,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2002,
+              243254355,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2003,
+              247086445,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2004,
+              249233337,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2005,
+              253286655,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2006,
+              263064463,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2007,
+              264528020,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2008,
+              271487632,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2009,
+              283350142,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2010,
+              286017964,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2011,
+              291032311,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2012,
+              298150746,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2013,
+              293032047,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2014,
+              293759963,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2015,
+              309084482,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2016,
+              311782397,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2017,
+              313130092,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2018,
+              314849963,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2019,
+              316381020,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2020,
+              319900742,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2021,
+              317850425,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2022,
+              319931068,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2023,
+              321204320,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2024,
+              324443002,
+              "pass"
+            ],
+            [
+              "ageracesex",
+              2025,
+              335290102,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2000,
+              244944587,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2001,
+              241805714,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2002,
+              243244348,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2003,
+              247068835,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2004,
+              249250588,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2005,
+              253273074,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2006,
+              263062318,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2007,
+              264513354,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2008,
+              271493666,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2009,
+              283351932,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2010,
+              286025571,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2011,
+              291021174,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2012,
+              298178999,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2013,
+              293035401,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2014,
+              293749894,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2015,
+              309092093,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2016,
+              311779297,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2017,
+              313139027,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2018,
+              314829362,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2019,
+              316380089,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2020,
+              319915106,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2021,
+              317831591,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2022,
+              319935222,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2023,
+              321219128,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2024,
+              324461809,
+              "pass"
+            ],
+            [
+              "raceincome",
+              2025,
+              335278878,
+              "pass"
+            ]
+          ],
+          "align": "llrl",
+          "note": null,
+          "numeric_columns": [
+            2
+          ],
+          "label": "tab:a3-invariants"
+        }
+      ],
+      "figures": [],
+      "sql": [],
+      "skipped_because": null,
+      "runtime_s": 43.135407413000024,
+      "error": null
+    },
+    {
+      "id": "A4",
+      "section": "A",
+      "title": "Published artifacts resolve and match their advertised size",
+      "tier": 2,
+      "status": "fail",
+      "claim": "Every file the published catalog advertises exists at the URL given, returns HTTP 200, and is exactly the number of bytes the catalog claims.",
+      "method": "One HTTP HEAD request per catalog entry \u2014 per-year partitions, all-years files, and crosswalks \u2014 comparing the reported content length against the size recorded in the catalog.",
+      "interpretation": "The catalog is fetched by the site at runtime and is the only index of what exists. An entry that does not resolve is a broken download for a user; one whose size disagrees means the catalog and the object store have diverged, which usually indicates a publish that partially failed. A response carrying no content length is reported separately from a size mismatch, because that is a fact about the response rather than about the file.",
+      "metrics": [],
+      "tables": [],
+      "figures": [],
+      "sql": [],
+      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
+      "runtime_s": 0.0012609629999928984,
+      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/provenance.py\", line 302, in a4_catalog_resolves\n    cat = ctx.catalog()\n          ^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+    },
+    {
+      "id": "A6",
+      "section": "A",
+      "title": "Version coherence across the four version lines",
+      "tier": 2,
+      "status": "fail",
+      "claim": "The site, pipeline, schema contract, and derived data versions recorded in the published catalog agree with the repository they are supposed to have been built from, and every derived URL sits under the declared derived version prefix.",
+      "method": "The four version fields in the published catalog are compared against the values the repository declares, and every entry URL is checked for the derived version prefix. The catalog committed to the repository is compared against the published one separately.",
+      "interpretation": "Disagreement means the published data was built from a different revision than the one being read, so nothing else in this report can be attributed to a known state of the code. The committed \\texttt{site/catalog.json} is a development fallback only --- the site fetches the live catalog at runtime --- so a difference there affects local development rather than users, but anyone testing with \\texttt{?catalog=./catalog.json} is validating against data that may no longer be published.",
+      "metrics": [],
+      "tables": [],
+      "figures": [],
+      "sql": [],
+      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
+      "runtime_s": 0.0007529509999812944,
+      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/provenance.py\", line 456, in a6_versions\n    cat = ctx.catalog()\n          ^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+    },
+    {
+      "id": "C1",
+      "section": "C",
+      "title": "Crosswalk coverage of every published year",
+      "tier": 2,
+      "status": "fail",
+      "claim": "The crosswalk assigns a geography to every populated grid cell that lies within the United States, in every published year. Aggregation is therefore lossless except for cells that fall outside the country by more than the declared snap radius, which are excluded deliberately and counted separately.",
+      "method": "Each source file is aggregated to one row per populated grid cell and joined against the county crosswalk. Cells with no match are collected across all dataset-years and adjudicated geometrically: the distance from each to the nearest county polygon is measured in EPSG:5070, and a cell counts as a legitimate exclusion only if that distance exceeds the snap radius the registry declares.",
+      "interpretation": "Aggregation inner-joins each year's source against the crosswalk, so a cell the crosswalk lacks is discarded silently along with its population --- a partition built that way is a valid file with plausible numbers in it. Testing this on the year a crosswalk was built from cannot fail, which is why every published year is tested. Cells beyond the snap radius are outside the country and excluded on purpose; they are adjudicated by distance rather than against a list, so the check cannot be satisfied by a growing set of exceptions. Any unassigned cell inside the radius is population missing from the published totals.",
+      "metrics": [],
+      "tables": [],
+      "figures": [],
+      "sql": [],
+      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
+      "runtime_s": 0.0009323070000277767,
+      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 101, in c1_cell_coverage\n    xw = _crosswalk(ctx, \"county\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 25, in _crosswalk\n    return ctx.crosswalk_source(geography)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 189, in crosswalk_source\n    return (self.catalog().get(\"crosswalks\") or {}).get(geography)\n            ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+    },
+    {
+      "id": "C2",
+      "section": "C",
+      "title": "Each grid cell is assigned to exactly one unit",
+      "tier": 2,
+      "status": "fail",
+      "claim": "No grid cell appears twice in a crosswalk. A duplicated cell would be counted once for each unit it appears under, inflating totals in a way that no total-preserving check would catch.",
+      "method": "For each crosswalk, the number of rows is compared against the number of distinct grid cells.",
+      "interpretation": "A cell whose centroid falls exactly on a shared polygon edge matches more than one unit in the spatial join; the pipeline resolves this by keeping the first match. This check confirms the resolution is applied consistently and that no duplicate survives into a published file. A duplicate would inflate the total of every geography it appears in while leaving the national total looking correct.",
+      "metrics": [],
+      "tables": [],
+      "figures": [],
+      "sql": [],
+      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
+      "runtime_s": 0.0007360399999924994,
+      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 223, in c2_uniqueness\n    for geography in ctx.crosswalk_geographies():\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 196, in crosswalk_geographies\n    return sorted(self.catalog().get(\"crosswalks\") or {})\n                  ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+    },
+    {
+      "id": "C3",
+      "section": "C",
+      "title": "Border-cell snapping, and how much population depends on it",
+      "tier": 2,
+      "status": "fail",
+      "claim": "Cells whose centroid falls outside every polygon of a complete-coverage geography are recovered by snapping to the nearest unit rather than dropped, and the amount of population this recovers is stated rather than assumed.",
+      "method": "The \\texttt{snapped} flag carried by each crosswalk is counted per geography. The population riding on it is measured by joining the 2022 source file to the county crosswalk and summing the raw measure over snapped cells.",
+      "interpretation": "Recorded rather than judged. Snapping applies only where a geography tiles the country completely, so an unmatched cell must belong somewhere; for partial-coverage geographies such as metropolitan areas an unmatched cell is a genuine absence and is dropped instead. The snapped cells are a systematic border artifact --- cells straddling the Canadian and Mexican frontiers whose centroids land abroad --- so dropping them would undercount border communities specifically, which for an environmental-inequality product are populations of interest.",
+      "metrics": [],
+      "tables": [],
+      "figures": [],
+      "sql": [],
+      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
+      "runtime_s": 0.0007932269999741948,
+      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 279, in c3_snapping\n    for geography in ctx.crosswalk_geographies():\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 196, in crosswalk_geographies\n    return sorted(self.catalog().get(\"crosswalks\") or {})\n                  ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+    },
+    {
+      "id": "C4",
+      "section": "C",
+      "title": "Hierarchical consistency between independently built crosswalks",
+      "tier": 2,
+      "status": "fail",
+      "claim": "A cell contained by a county or PUMA polygon is contained by that unit's state: the first two digits of its identifier equal its state FIPS code. The crosswalks come from separate spatial joins against separate shapefiles, so agreement is an independent check on both.",
+      "method": "Child and parent crosswalks are joined on grid cell and their identifiers compared. Disagreements are partitioned three ways: cells placed by containment in both crosswalks, cells where at least one placement came from nearest-polygon snapping, and cells where the source shapefiles themselves conflict --- the last confirmed by re-running containment against the TIGER geometry rather than inferred.",
+      "interpretation": "Containment is transitive and must nest: a cell inside a county polygon is inside that county's state as a matter of geometry, and a disagreement there means one of the two joins is wrong. Two other cases are not defects. Snapping is decided per level, so near a border the nearest PUMA and the nearest state may sit in different states without either result being incorrect. And TIGER's layers are published separately and are not guaranteed mutually consistent, most visibly along rivers whose channel has moved since the boundary was drawn; there both joins are correct with respect to their own input. Only the unexplained remainder counts against this check. Commuting zones are excluded entirely: they are derived by remapping county identifiers rather than by their own spatial join, so agreement with county is true by construction and would be evidence of nothing.",
+      "metrics": [],
+      "tables": [],
+      "figures": [],
+      "sql": [],
+      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
+      "runtime_s": 0.0007832269999994423,
+      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 413, in c4_hierarchy\n    xws = {g: ctx.crosswalk_source(g) for g in ctx.crosswalk_geographies()}\n                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 196, in crosswalk_geographies\n    return sorted(self.catalog().get(\"crosswalks\") or {})\n                  ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+    },
+    {
+      "id": "C5",
+      "section": "C",
+      "title": "Grid geometry is as documented",
+      "tier": 2,
+      "status": "fail",
+      "claim": "Grid cell coordinates are centroids on a 0.01 degree lattice offset by 0.005, stored as strings, spanning the continental United States plus Alaska and Hawaii and no territory.",
+      "method": "Coordinate column types are read from the source schema. Every distinct cell in the 2022 file is tested arithmetically for the documented lattice offset, rather than by string suffix, so the test holds regardless of how many decimal places a file happens to print. Territory assignment is counted from the county crosswalk.",
+      "interpretation": "Coordinates are stored as strings deliberately: the join between source and crosswalk is an equality test, and float equality silently drops rows. A departure from the lattice would mean the grid is not what the registry describes and the centroid-assignment method rests on a false premise. The longitude range spans the Aleutian crossing of the antimeridian, so its extremes are not a contiguous interval.",
+      "metrics": [],
+      "tables": [],
+      "figures": [],
+      "sql": [],
+      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
+      "runtime_s": 0.0007702830000084759,
+      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 502, in c5_grid_geometry\n    xw = _crosswalk(ctx, \"county\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 25, in _crosswalk\n    return ctx.crosswalk_source(geography)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 189, in crosswalk_source\n    return (self.catalog().get(\"crosswalks\") or {}).get(geography)\n            ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+    },
+    {
+      "id": "C6",
+      "section": "C",
+      "title": "Drift in the populated cell set across years",
+      "tier": 2,
+      "status": "info",
+      "claim": "The grid is fixed, but the populated subset of it is not: cells appear and disappear as administrative-records coverage changes and as people move. A crosswalk built from any single year therefore cannot assign another year's cells. This check measures how far the populated set drifts.",
+      "method": "For each published year of the age-race-sex dataset, the set of populated cells is compared against the 2022 file in both directions: cells that year has and 2022 does not, and cells 2022 has and that year does not. 2022 is a fixed point of comparison only; no year is privileged in the crosswalk itself.",
+      "interpretation": "Reported as a characterisation, not a pass or fail. Drift is a property of the source data --- the Census Bureau is not doing anything wrong by publishing a moving cell set --- and becomes a defect only if a pipeline assumes otherwise. Because the drift runs in both directions, no single year is a superset of the others, which is why crosswalks are built from the union of all published dataset-years. C1 and C7 are the checks that fail if that ever stops being true.",
+      "metrics": [
+        {
+          "label": "Years compared",
+          "value": 26,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Reference year for comparison",
+          "value": 2022,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Most cells absent from the reference in one year",
+          "value": 149049,
+          "unit": "cells",
+          "expected": null
+        },
+        {
+          "label": "Most cells present only in the reference",
+          "value": 553665,
+          "unit": "cells",
+          "expected": null
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Populated cell set by year, compared with the reference year",
+          "columns": [
+            "Year",
+            "Populated cells",
+            "Absent from 2022",
+            "Present in 2022 only"
+          ],
+          "rows": [
+            [
+              2000,
+              2300604,
+              143487,
+              454617
+            ],
+            [
+              2001,
+              2180995,
+              122926,
+              553665
+            ],
+            [
+              2002,
+              2223632,
+              124894,
+              512996
+            ],
+            [
+              2003,
+              2286972,
+              128170,
+              452932
+            ],
+            [
+              2004,
+              2318312,
+              124967,
+              418389
+            ],
+            [
+              2005,
+              2366497,
+              128389,
+              373626
+            ],
+            [
+              2006,
+              2473172,
+              143133,
+              281695
+            ],
+            [
+              2007,
+              2430241,
+              134996,
+              316489
+            ],
+            [
+              2008,
+              2471826,
+              137920,
+              277828
+            ],
+            [
+              2009,
+              2558298,
+              149049,
+              202485
+            ],
+            [
+              2010,
+              2568944,
+              147046,
+              189836
+            ],
+            [
+              2011,
+              2551866,
+              137895,
+              197763
+            ],
+            [
+              2012,
+              2551372,
+              128467,
+              188829
+            ],
+            [
+              2013,
+              2547992,
+              122300,
+              186042
+            ],
+            [
+              2014,
+              2577969,
+              115302,
+              149067
+            ],
+            [
+              2015,
+              2600809,
+              116307,
+              127232
+            ],
+            [
+              2016,
+              2602674,
+              110380,
+              119440
+            ],
+            [
+              2017,
+              2604272,
+              102829,
+              110291
+            ],
+            [
+              2018,
+              2607807,
+              93101,
+              97028
+            ],
+            [
+              2019,
+              2605784,
+              84717,
+              90667
+            ],
+            [
+              2020,
+              2612800,
+              67546,
+              66480
+            ],
+            [
+              2021,
+              2611610,
+              44941,
+              45065
+            ],
+            [
+              2022,
+              2611734,
+              0,
+              0
+            ],
+            [
+              2023,
+              2606922,
+              39364,
+              44176
+            ],
+            [
+              2024,
+              2606191,
+              53593,
+              59136
+            ],
+            [
+              2025,
+              2625835,
+              75125,
+              61024
+            ]
+          ],
+          "align": "lrrr",
+          "note": "A cell is populated in a given year if the source file contains any row for it. Drift runs in both directions, so no single year contains all the others.",
+          "numeric_columns": [
+            1,
+            2,
+            3
+          ],
+          "label": "tab:c6-drift"
+        }
+      ],
+      "figures": [],
+      "sql": [],
+      "skipped_because": null,
+      "runtime_s": 27.355429568999966,
+      "error": null
+    },
+    {
+      "id": "C7",
+      "section": "C",
+      "title": "Fitness of the published crosswalk for its advertised purpose",
+      "tier": 2,
+      "status": "fail",
+      "claim": "The site offers the crosswalk so users can aggregate the Census source grids it does not serve. It should therefore cover the union of populated cells across every published dataset-year, not the cells of any one year.",
+      "method": "The distinct cells of every published source file are unioned in a single scan and joined against the county crosswalk. Cells with no match are adjudicated by distance to the nearest county polygon, on the same basis as C1.",
+      "interpretation": "A user following the site's own instructions aggregates the raw grid with this file, so any cell it cannot assign is population that silently disappears from their analysis rather than ours. The pollutant and extreme-weather grids are not included in the union: they are not yet enabled in the registry and their cell coverage differs again, so a shortfall measured here is a lower bound on what a user of those files would encounter.",
+      "metrics": [],
+      "tables": [],
+      "figures": [],
+      "sql": [],
+      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
+      "runtime_s": 0.0012382410000100208,
+      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 672, in c7_crosswalk_fitness\n    xw = _crosswalk(ctx, \"county\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 25, in _crosswalk\n    return ctx.crosswalk_source(geography)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 189, in crosswalk_source\n    return (self.catalog().get(\"crosswalks\") or {}).get(geography)\n            ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+    },
+    {
+      "id": "C8",
+      "section": "C",
+      "title": "Spatial concentration of any dropped population",
+      "tier": 2,
+      "status": "fail",
+      "claim": "Population the crosswalk fails to assign is reported by state, so that a national figure cannot conceal a loss falling heavily on one place.",
+      "method": "Cells unassigned in the most recent final year are located by point-in-polygon against the state boundaries and aggregated. The share is computed against what each state's total would have been had no cell been dropped, using the published state partition as the denominator.",
+      "interpretation": "A national loss expressed as a fraction of a percent invites the reading that it is a rounding error, which holds only if the loss is diffuse. This check makes the distribution visible: a loss concentrated in particular states distorts the geographic pattern the product exists to describe whatever its national magnitude, and grid cells vary enormously in population, so a small number of dropped cells can carry a large number of people. Where every dropped cell falls outside all state polygons there is no distribution to report, and whether excluding those cells is correct is adjudicated in C1 rather than here.",
+      "metrics": [],
+      "tables": [],
+      "figures": [],
+      "sql": [],
+      "skipped_because": "RuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url",
+      "runtime_s": 0.001051259000007576,
+      "error": "Traceback (most recent call last):\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 321, in run\n    res = c.fn(ctx)\n          ^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 746, in c8_loss_concentration\n    xw = _crosswalk(ctx, \"county\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/crosswalk.py\", line 25, in _crosswalk\n    return ctx.crosswalk_source(geography)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 189, in crosswalk_source\n    return (self.catalog().get(\"crosswalks\") or {}).get(geography)\n            ^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 132, in catalog\n    url = self.catalog_url or f\"{self._base_url()}/catalog.json\"\n                                 ^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/gridded-eif/gridded-eif/pipeline/validation/registry.py\", line 159, in _base_url\n    raise RuntimeError(\nRuntimeError: no base_url available \u2014 set GEIF_BASE_URL or pass --catalog-url\n"
+    }
+  ]
+}
