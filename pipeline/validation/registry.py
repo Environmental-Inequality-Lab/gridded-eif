@@ -73,6 +73,9 @@ class Context:
     # it ran in, because a green report against unpublished artifacts says
     # nothing about what users are currently receiving.
     prefer_local: bool = False
+    # False for a --no-pdf run: no document is rendered, so drawing figures
+    # is work whose only possible outcome is a failure.
+    render_figures: bool = True
     _con: duckdb.DuckDBPyConnection | None = None
     _catalog: dict | None = None
 
@@ -134,7 +137,18 @@ class Context:
         return self._catalog
 
     def _base_url(self) -> str:
-        """The CDN origin, taken from the committed catalog rather than hardcoded."""
+        """The CDN origin: environment first, then the committed catalog.
+
+        GEIF_BASE_URL is what the pipeline and both workflows already use, so it
+        is the authoritative answer wherever it is set. The committed
+        ``site/catalog.json`` is only a development convenience and is
+        gitignored — which meant a fresh CI checkout had no base URL at all and
+        the report's inventory could not be built.
+        """
+        env = os.environ.get("GEIF_BASE_URL")
+        if env:
+            return env.rstrip("/")
+
         local = config.REPO_ROOT / "site" / "catalog.json"
         if local.exists():
             import json as _json
@@ -142,7 +156,9 @@ class Context:
             base = _json.loads(local.read_text()).get("base_url")
             if base:
                 return base.rstrip("/")
-        raise RuntimeError("no base_url available — pass --catalog-url explicitly")
+        raise RuntimeError(
+            "no base_url available — set GEIF_BASE_URL or pass --catalog-url"
+        )
 
     def published(self, dataset: str, geography: str, year: int) -> str | None:
         """Where to read a partition from — local build if asked, else published."""

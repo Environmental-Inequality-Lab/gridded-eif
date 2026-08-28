@@ -145,8 +145,7 @@ def c1_cell_coverage(ctx: Context) -> Result:
     # flat near-zero series plotted at full height reads as a dramatic pattern
     # in what is actually nothing.
     figs = []
-    if worst[5] > 0.01:
-        figures.coverage_loss_by_year(ctx, series)
+    if worst[5] > 0.01 and figures.wanted(ctx) and figures.coverage_loss_by_year(ctx, series):
         figs.append(
             ctx.figure(
                 "c1-coverage-loss",
@@ -603,13 +602,18 @@ def c6_grid_stability(ctx: Context) -> Result:
         """).fetchone()
         rows.append([year, n, only_here, only_ref])
 
-    figures.cell_set_drift(ctx, [(r[0], r[1], r[2]) for r in rows], ref)
-    fig = ctx.figure(
-        "c6-cell-drift",
-        "Populated grid cells by year. The dark band is the number of cells present in that "
-        "year but absent from the 2022 file. A crosswalk built from the union of all years "
-        "has no such band.",
-    )
+    figs = []
+    if figures.wanted(ctx) and figures.cell_set_drift(
+        ctx, [(r[0], r[1], r[2]) for r in rows], ref
+    ):
+        figs.append(
+            ctx.figure(
+                "c6-cell-drift",
+                "Populated grid cells by year. The dark band is the number of cells present "
+                "in that year but absent from the 2022 file. A crosswalk built from the union "
+                "of all years has no such band.",
+            )
+        )
 
     return Result(
         id="C6", section="C", title="", tier=2, status="info",
@@ -636,7 +640,7 @@ def c6_grid_stability(ctx: Context) -> Result:
                 label="tab:c6-drift",
             )
         ],
-        figures=[fig],
+        figures=figs,
     )
 
 
@@ -815,13 +819,16 @@ def c8_loss_concentration(ctx: Context) -> Result:
                round(float(by_state.iloc[0]["share"]), 3), unit="%")
     )
 
-    figures.loss_by_state(ctx, by_state.head(15), year)
-    fig = ctx.figure(
-        "c8-loss-by-state",
-        "Population the crosswalk could not assign, as a share of each state's published "
-        "total. Absolute counts are annotated beside each bar.",
-        width=r"0.92\textwidth",
-    )
+    figs = []
+    if figures.wanted(ctx) and figures.loss_by_state(ctx, by_state.head(15), year):
+        figs.append(
+            ctx.figure(
+                "c8-loss-by-state",
+                "Population the crosswalk could not assign, as a share of each state's "
+                "published total. Absolute counts are annotated beside each bar.",
+                width=r"0.92\textwidth",
+            )
+        )
 
     return Result(
         id="C8", section="C", title="", tier=2, status="fail",
@@ -846,5 +853,5 @@ def c8_loss_concentration(ctx: Context) -> Result:
                 label="tab:c8-concentration",
             )
         ],
-        figures=[fig],
+        figures=figs,
     )

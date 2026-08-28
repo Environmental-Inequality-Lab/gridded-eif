@@ -13,9 +13,13 @@ report still builds, which matters more.
 
 from __future__ import annotations
 
+import shutil
 from collections.abc import Sequence
 
 import matplotlib
+from rich.console import Console
+
+console = Console()
 
 _PGF_PREAMBLE = r"""
 \usepackage[T1]{fontenc}
@@ -26,11 +30,24 @@ _PGF_PREAMBLE = r"""
 _configured = False
 
 
+def wanted(ctx) -> bool:
+    """Whether figures are worth drawing at all.
+
+    A --no-pdf run renders no document, so drawing figures for it is work whose
+    only possible outcome is a failure.
+    """
+    return getattr(ctx, "render_figures", True)
+
+
 def _configure() -> None:
     global _configured
     if _configured:
         return
-    try:
+    # Tested by looking for the binary, not by try/except around the backend
+    # selection: matplotlib.use("pgf") succeeds perfectly well with no TeX
+    # installed and defers the failure to savefig, so the guard that looked
+    # right caught nothing and a data check failed on a missing font renderer.
+    if shutil.which("pdflatex"):
         matplotlib.use("pgf")
         matplotlib.rcParams.update({
             "pgf.texsystem": "pdflatex",
@@ -38,7 +55,7 @@ def _configure() -> None:
             "pgf.preamble": _PGF_PREAMBLE,
             "text.usetex": True,
         })
-    except Exception:  # noqa: BLE001 — a missing TeX must not stop the report
+    else:
         matplotlib.use("pdf")
         matplotlib.rcParams.update({
             "text.usetex": False,
@@ -74,15 +91,31 @@ MUTED = "#8a8f98"
 SECOND = "#2b5d7d"
 
 
-def _save(fig, ctx, name: str) -> None:
-    path = ctx.figure_dir / f"{name}.pdf"
-    fig.savefig(path)
+def _save(fig, ctx, name: str) -> bool:
+    """Write a figure, reporting failure rather than raising.
+
+    A check's verdict must depend on the data and on nothing else. Whether a
+    font renderer is installed on the runner is not evidence about the Gridded
+    EIF, so a figure that cannot be drawn omits itself and lets the check stand.
+    """
     import matplotlib.pyplot as plt
 
-    plt.close(fig)
+    try:
+        fig.savefig(ctx.figure_dir / f"{name}.pdf")
+        return True
+    except Exception as exc:  # noqa: BLE001 — see docstring
+        console.print(f"[yellow]figure {name} not drawn: {type(exc).__name__}: {exc}[/yellow]")
+        return False
+    finally:
+        # Best effort: a failure while releasing the figure would propagate out
+        # of the finally block and undo the guard above.
+        try:
+            plt.close(fig)
+        except Exception:  # noqa: BLE001, S110
+            pass
 
 
-def coverage_loss_by_year(ctx, series: dict[str, list[tuple[int, float]]]) -> None:
+def coverage_loss_by_year(ctx, series: dict[str, list[tuple[int, float]]]) -> bool:
     """C1 — share of source population dropped, by year, per dataset."""
     _configure()
     import matplotlib.pyplot as plt
@@ -119,10 +152,10 @@ def coverage_loss_by_year(ctx, series: dict[str, list[tuple[int, float]]]) -> No
             xy=(min(all_years), 0), xytext=(2, 6), textcoords="offset points",
             ha="left", va="bottom", fontsize=7, color=MUTED,
         )
-    _save(fig, ctx, "c1-coverage-loss")
+    return _save(fig, ctx, "c1-coverage-loss")
 
 
-def loss_by_state(ctx, by_state, year: int) -> None:
+def loss_by_state(ctx, by_state, year: int) -> bool:
     """C8 — dropped population as a share of each state's published total."""
     _configure()
     import matplotlib.pyplot as plt
@@ -141,10 +174,10 @@ def loss_by_state(ctx, by_state, year: int) -> None:
         ax.annotate(f"{lost:,.0f}", xy=(share, y), xytext=(4, 0),
                     textcoords="offset points", va="center", fontsize=6.5, color=MUTED)
     ax.set_xlim(0, df["share"].max() * 1.22)
-    _save(fig, ctx, "c8-loss-by-state")
+    return _save(fig, ctx, "c8-loss-by-state")
 
 
-def cell_set_drift(ctx, rows: Sequence[tuple[int, int, int]], ref: int) -> None:
+def cell_set_drift(ctx, rows: Sequence[tuple[int, int, int]], ref: int) -> bool:
     """C6 — populated cells per year, and how many the reference year lacks."""
     _configure()
     import matplotlib.pyplot as plt
@@ -166,4 +199,4 @@ def cell_set_drift(ctx, rows: Sequence[tuple[int, int, int]], ref: int) -> None:
         frameon=False, loc="lower left", bbox_to_anchor=(0, 1.01),
         ncol=2, borderaxespad=0,
     )
-    _save(fig, ctx, "c6-cell-drift")
+    return _save(fig, ctx, "c6-cell-drift")

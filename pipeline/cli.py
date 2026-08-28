@@ -366,7 +366,11 @@ def validate_report(
 
     target = "the local build tree (NOT the published product)" if local else "the published product"
     ctx = vreg.Context(
-        out_dir=out_dir, catalog_url=catalog_url, max_tier=tier, prefer_local=local
+        out_dir=out_dir,
+        catalog_url=catalog_url,
+        max_tier=tier,
+        prefer_local=local,
+        render_figures=pdf,
     )
     console.print(
         f"Running {len(checks)} checks "

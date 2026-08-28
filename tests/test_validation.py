@@ -182,3 +182,63 @@ def test_render_produces_a_complete_document(tmp_path):
     # visible in the document rather than silently missing.
     for key in SECTIONS:
         assert f"\\label{{sec:{key}}}" in tex
+
+
+# --- environment robustness ---------------------------------------------------
+
+
+def test_base_url_prefers_the_environment(monkeypatch, tmp_path):
+    """Regression: a fresh CI checkout has no committed catalog.
+
+    `site/catalog.json` is gitignored, so the runner had no base URL and the
+    report's inventory could not be built. GEIF_BASE_URL is what the pipeline
+    and both workflows already use.
+    """
+    monkeypatch.setenv("GEIF_BASE_URL", "https://example.invalid/cdn/")
+    ctx = registry.Context(out_dir=tmp_path)
+    assert ctx._base_url() == "https://example.invalid/cdn"
+
+
+def test_figures_fall_back_when_tex_is_absent(monkeypatch):
+    """Regression: a data check failed because the runner had no LaTeX.
+
+    `matplotlib.use("pgf")` succeeds with no TeX installed and defers the
+    failure to savefig, so a try/except around backend selection caught nothing.
+    The decision has to be made by looking for the binary.
+    """
+    import matplotlib
+
+    from pipeline.validation import figures
+
+    before = matplotlib.get_backend()
+    monkeypatch.setattr(figures.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(figures, "_configured", False)
+    try:
+        figures._configure()
+        assert matplotlib.rcParams["text.usetex"] is False
+    finally:
+        matplotlib.use(before)
+        figures._configured = False
+
+
+def test_a_failed_figure_does_not_fail_its_check(monkeypatch, tmp_path):
+    """A verdict must rest on the data, not on the runner's font stack."""
+    import matplotlib.pyplot as plt
+
+    from pipeline.validation import figures
+
+    fig = plt.figure()
+    monkeypatch.setattr(
+        fig, "savefig",
+        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("'pdflatex' not found")),
+    )
+    monkeypatch.setattr(figures, "_configured", True)
+    assert figures._save(fig, registry.Context(out_dir=tmp_path), "x") is False
+
+
+def test_no_pdf_runs_skip_figure_rendering(tmp_path):
+    """Drawing figures for a document nobody renders can only lose."""
+    from pipeline.validation import figures
+
+    assert figures.wanted(registry.Context(out_dir=tmp_path)) is True
+    assert figures.wanted(registry.Context(out_dir=tmp_path, render_figures=False)) is False
