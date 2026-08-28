@@ -50,7 +50,7 @@ jobs:
           cache: pip
 
       - name: Install
-        run: pip install -e .
+        run: pip install -e ".[validation]"
 
       # .cache holds TIGER shapefiles (~85 MB per level) and the built
       # crosswalks. The runner is ephemeral, so without this every run
@@ -109,6 +109,35 @@ jobs:
       - name: Regenerate catalog
         run: geif catalog --base-url "$GEIF_BASE_URL"
 
+      # THE GATE. Runs against the build tree, before anything is uploaded, so
+      # a defect in what was just built stops the run instead of shipping.
+      #
+      # This is the check that would have caught the crosswalk defect: every
+      # published year except the crosswalk's reference year was short, and no
+      # existing test could see it because the one test of losslessness ran on
+      # the reference year, where it cannot fail.
+      #
+      # Non-blocking is not an option here. A validation step that publishes
+      # anyway is a log line nobody reads.
+      - name: Validate the build before publishing
+        run: |
+          geif validate-report \
+            --section C \
+            --tier 2 \
+            --local \
+            --no-pdf \
+            --out validation
+
+      # Kept even when the gate fails, because a failed gate is exactly when
+      # someone needs to see the numbers.
+      - name: Upload pre-publish validation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-pre-publish
+          path: validation/results.json
+          if-no-files-found: warn
+
       # Prints the identity this job presents to AWS. STS's denial message
       # never says WHICH condition failed, so without this an auth failure is
       # pure guesswork. The token itself is a credential and is never printed —
@@ -146,6 +175,27 @@ jobs:
           geif publish \
             --bucket "$GEIF_BUCKET" \
             --distribution-id "$GEIF_DISTRIBUTION_ID"
+
+      # The gate above validated what was about to go out. This validates what
+      # actually did — that the CDN serves the bytes the catalog advertises, at
+      # the sizes it claims, and that the numbers still reconcile when read back
+      # over the network rather than off local disk.
+      - name: Validate the published product
+        if: ${{ inputs.publish }}
+        run: |
+          geif validate-report \
+            --section A,C \
+            --tier 2 \
+            --no-pdf \
+            --out validation-published
+
+      - name: Upload published validation results
+        if: ${{ always() && inputs.publish }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-published
+          path: validation-published/results.json
+          if-no-files-found: warn
 
       - name: Summary
         run: |

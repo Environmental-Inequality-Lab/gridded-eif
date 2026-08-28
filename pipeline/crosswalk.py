@@ -33,12 +33,7 @@ BUILD_DIR_FOR_PUBLISH = config.REPO_ROOT / ".build"
 GRID_CRS = "EPSG:4326"
 
 
-def build(
-    geography: str,
-    reference_dataset: str = "ageracesex",
-    reference_year: int = 2022,
-    force: bool = False,
-) -> Path:
+def build(geography: str, force: bool = False) -> Path:
     """Build (or reuse) the crosswalk for one geography level."""
     CACHE.mkdir(exist_ok=True)
     out = CACHE / f"xwalk_{geography}.parquet"
@@ -47,7 +42,7 @@ def build(
         return out
 
     geo = config.geographies()[geography]
-    cells = _distinct_cells(reference_dataset, reference_year)
+    cells = _cell_union()
     console.print(f"crosswalk {geography}: {len(cells):,} grid cells")
 
     if geo.built_from:
@@ -146,18 +141,50 @@ def names(geography: str) -> pd.DataFrame:
     }).drop_duplicates("geo_id")
 
 
-def _distinct_cells(dataset: str, year: int) -> pd.DataFrame:
-    """Distinct populated grid cells, taken from the data itself.
+def _cell_union(force: bool = False) -> pd.DataFrame:
+    """Every grid cell populated in ANY published dataset-year.
 
     Deliberately NOT from eif_grid_topology.rda, which is CONUS-only and would
     silently drop Alaska and Hawaii — 1.45M people.
+
+    Deliberately NOT from a single reference year either. That is what this
+    used to do, and it was wrong: the grid is fixed but the *populated* subset
+    of it is not. Cells appear and disappear as administrative-records coverage
+    changes and as people move, so a crosswalk built from one year cannot
+    assign the cells another year has. Aggregation inner-joins against the
+    crosswalk, so every such cell was silently dropped along with its
+    population — between 0.05% and 0.43% of every published year except the
+    reference year itself, where the loss was necessarily zero and no test
+    could see it. See validation checks C1 and C6.
+
+    Scanning all published source files costs one pass over two columns. The
+    result is cached because it is the same for every geography level.
+
+    NOTE: this covers the datasets this pipeline publishes. The pollutant and
+    extreme-weather grids are not included — they are not enabled in the
+    registry and their cell coverage differs again. Enabling them must extend
+    this union, or the published crosswalk will understate its own coverage for
+    exactly the use the site recommends it for.
     """
+    CACHE.mkdir(exist_ok=True)
+    cached = CACHE / "grid_cells_union.parquet"
+    if cached.exists() and not force:
+        return pd.read_parquet(cached)
+
+    sources = [
+        config.source_url(ds.name, year)
+        for ds in config.datasets().values()
+        for year in ds.all_years()
+    ]
     con = duckdb.connect()
     con.execute("INSTALL httpfs; LOAD httpfs;")
-    url = config.source_url(dataset, year)
-    return con.execute(
-        f"SELECT DISTINCT grid_lon, grid_lat FROM read_parquet('{url}')"
+    console.print(f"[dim]grid cells: scanning {len(sources)} source files for the union[/dim]")
+    cells = con.execute(
+        f"SELECT DISTINCT grid_lon, grid_lat FROM read_parquet({sources!r})"
     ).df()
+    cells.to_parquet(cached, index=False, compression="zstd")
+    console.print(f"[green]grid cells: {len(cells):,} distinct across all published years[/green]")
+    return cells
 
 
 def _load_boundaries(geo: config.Geography, keep_extra: bool = False) -> gpd.GeoDataFrame:

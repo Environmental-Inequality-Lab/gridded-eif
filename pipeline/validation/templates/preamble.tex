@@ -1,0 +1,98 @@
+% Preamble for the validation appendix.
+%
+% Latin Modern throughout — the face LaTeX renders in by default, chosen here
+% deliberately rather than inherited, because the document is meant to read as
+% the appendix to a paper and that is what the appendix to a paper looks like.
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{etoolbox}
+
+\usepackage[letterpaper,margin=1.05in,top=1.15in,bottom=1.15in]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{threeparttable}
+\usepackage{siunitx}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\usepackage[font=small,labelfont=bf,textfont=normalfont]{caption}
+% Floats must not drift out of the check they are evidence for. Every check
+% ends with a \FloatBarrier, so a table can move within its subsection but
+% never past it — in an appendix, a table three pages from its claim is a
+% table the reader will not connect to anything.
+\usepackage{placeins}
+
+\sisetup{
+  group-separator = {,},
+  group-minimum-digits = 4,
+  detect-weight = true,
+  detect-family = true,
+  table-align-text-after = false
+}
+
+% Status colours. Muted rather than traffic-light: this is a printed appendix
+% and it should still read correctly in greyscale, so weight carries the signal
+% and colour only reinforces it.
+\definecolor{passgreen}{HTML}{2F6B4F}
+\definecolor{failred}{HTML}{A4243B}
+\definecolor{warnamber}{HTML}{9A6A1F}
+\definecolor{skipgrey}{HTML}{6B7280}
+\definecolor{infoblue}{HTML}{2B5D7D}
+\definecolor{rulegrey}{HTML}{D4D7DD}
+
+\newcommand{\stpass}{\textcolor{passgreen}{\textsc{pass}}}
+\newcommand{\stfail}{\textcolor{failred}{\textbf{\textsc{fail}}}}
+\newcommand{\stwarn}{\textcolor{warnamber}{\textsc{warn}}}
+\newcommand{\stskip}{\textcolor{skipgrey}{\textsc{skip}}}
+\newcommand{\stinfo}{\textcolor{infoblue}{\textsc{info}}}
+
+% The claim under test, set apart from the narrative. A reader skimming the
+% appendix should be able to read only these and know what was checked.
+\newenvironment{claimbox}
+  {\par\vspace{2pt}\noindent\begin{list}{}{%
+     \setlength{\leftmargin}{1.2em}\setlength{\rightmargin}{0.8em}%
+     \setlength{\topsep}{2pt}\setlength{\parsep}{0pt}\setlength{\itemsep}{0pt}}%
+   \item[]\small\itshape}
+  {\end{list}\vspace{2pt}}
+
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{18pt plus 4pt minus 2pt}{7pt}
+\titlespacing*{\subsection}{0pt}{13pt plus 3pt minus 2pt}{5pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\scshape Gridded EIF --- Data Validation}
+\fancyhead[R]{\small\thepage}
+
+% Fixed-width table columns, set ragged right. Justified text in a narrow
+% column stretches interword spacing badly, and a table cell is too short a
+% measure for justification to look like anything but a defect.
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.12}
+
+\lstdefinestyle{sql}{
+  basicstyle=\ttfamily\scriptsize,
+  breaklines=true,
+  breakatwhitespace=true,
+  columns=fullflexible,
+  frame=none,
+  xleftmargin=1.1em,
+  showstringspaces=false,
+  keywordstyle=\bfseries,
+  language=SQL
+}
+
+% Long tables should not fight the page. A validation appendix is mostly
+% tables, and a table that overflows the margin is a table nobody checks.
+\AtBeginEnvironment{longtable}{\small}

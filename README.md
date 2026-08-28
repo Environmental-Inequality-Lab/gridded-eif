@@ -125,6 +125,59 @@ population, raw above.
 group, and injected noise (typically ±3) can exceed the true count. Aggregate to
 tract or above. This is why block group is deliberately not offered.
 
+## Validation
+
+The data is validated by an executable registry of checks, not by prose. Each
+check is a function returning a typed result; the registry drives both the test
+suite and a typeset PDF report, so a claim cannot appear in the document without
+also being enforced in CI.
+
+```bash
+pip install -e ".[validation]"
+```
+
+```bash
+geif validate-report --section A,C --tier 2
+```
+
+Checks are tiered by what they read, not by how long they take:
+
+| Tier | Reads |
+|---|---|
+| 0 | Registry and configuration only |
+| 1 | The local build tree. No network. |
+| 2 | The published catalog and the Census source files |
+| 3 | Independent published data — PEP, Decennial, ACS |
+
+Every check is currently tier 2 or 3 — sections A and C both read the published
+product. `pytest` runs any tier 0–1 check on every push and asserts, by
+inspection, that nothing at those tiers reaches the network. Tier 3 needs
+`CENSUS_API_KEY` for the ACS comparisons and records itself as skipped when it is
+absent, never as passing.
+
+**Checks run against the published artifacts, not `.build`.** The site fetches
+its catalog from the CDN at runtime, so what is published is what users receive;
+a report about the local build tree would describe a build nobody has.
+
+Output lands in `validation/`: `results.json` is tracked, so diffing it across
+commits shows regressions in the *data* rather than in the code. The PDF and the
+LaTeX intermediates are not.
+
+### When it runs
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `ci.yml` | every push, PR | Tests, lint, and the renderer against a synthetic result set |
+| `refresh-data.yml` | manual, quarterly | **Gates the publish.** Validates the build tree before upload, then re-validates the published product after |
+| `validation.yml` | manual, monthly | The typeset PDF against whatever is currently published, uploaded as an artifact |
+
+The gate is the important one. It runs `--local` against what was just built, and
+a failure stops the run before anything reaches the CDN — a validation step that
+publishes anyway is a log line nobody reads. The monthly run catches what a
+refresh-triggered check cannot: an object lost from the CDN, an upstream file
+revised in place, or a published claim drifting away from what the data shows.
+Nothing has to change for it to start failing, which is the point.
+
 ## Versioning
 
 [SemVer](https://semver.org), on four independent lines: the site, the pipeline,

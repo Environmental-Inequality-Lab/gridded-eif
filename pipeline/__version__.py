@@ -9,4 +9,4 @@ catalog.json, so any published number is traceable to the exact build that
 produced it. Bumping MAJOR forces a rebuild of all partitions.
 """
 
-__version__ = "0.3.0"
+__version__ = "1.0.0"

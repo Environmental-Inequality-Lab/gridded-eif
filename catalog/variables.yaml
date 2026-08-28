@@ -371,15 +371,41 @@ geographies:
 # -----------------------------------------------------------------------------
 aggregation:
   method: point_in_polygon_centroid
+  # The cell set a crosswalk is built from. MUST be the union across every
+  # published dataset-year, never a single reference year.
+  #
+  # The grid is fixed; the POPULATED subset of it is not. Cells appear and
+  # disappear as administrative-records coverage changes and as people move, so
+  # no year is a superset of the others. Aggregation inner-joins each year
+  # against the crosswalk, so a cell the crosswalk lacks is discarded silently
+  # along with its population.
+  #
+  # This was previously a single reference year (2022) and cost every other
+  # published year between 0.05% and 0.43% of its population — concentrated,
+  # not diffuse: Hawaii was short 3.90% of its 2024 count. 2022 alone was exact,
+  # which is why a test written against 2022 could never have caught it.
+  # Validation checks C1, C6, and C7 hold this in place.
+  #
+  # Enabling the pollutant or extreme-weather datasets must extend the union to
+  # cover them, or the published crosswalks will understate their coverage for
+  # exactly the use the site recommends them for.
+  crosswalk_cell_set: union_of_all_published_years
   # Snapping applies only to geographies that tile the country completely
   # (county, state, tract, PUMA, congressional district). For those, an
   # unmatched cell is a border artifact and must belong somewhere. For partial
   # geographies such as CBSA it is a genuine absence and is dropped instead.
   snap_unmatched_to_nearest: true
   snap_max_distance_m: 25000        # metres, measured in EPSG:5070 (not degrees)
-  # Verified 2022: 222 of 2,611,734 cells (14,214 people) fall outside every
-  # county polygon. They are a systematic US-Mexico border artifact concentrated
-  # in Calexico, El Paso, and Laredo — cells straddling the border whose centroid
-  # lands in Mexico. Dropping them would undercount border communities.
+  # Verified against the full union: 286 of 3,021,990 cells fall outside every
+  # county polygon. They are a systematic border artifact concentrated in
+  # Calexico, El Paso, and Laredo — cells straddling the US-Mexico border whose
+  # centroid lands in Mexico, carrying 14,214 people in 2022. Dropping them
+  # would undercount border communities.
+  #
+  # Exactly one cell in the union is beyond the snap radius and is therefore
+  # excluded: -171.285, 55.955, open Bering Sea roughly 130 km from the
+  # Pribilofs. It appears only in 2024 and 2025 and carries 17 people. Check C1
+  # adjudicates this geometrically rather than against a list, so any OTHER
+  # cell dropped from inside the country fails it.
   residual_categories_visible: true
   mix_measures: false          # never combine raw and post-processed in one table

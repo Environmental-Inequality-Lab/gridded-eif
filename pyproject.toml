@@ -19,12 +19,22 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6"]
+# The validation report. Kept out of the base install: the pipeline itself
+# never plots or typesets, and CI jobs that only build data should not pull
+# matplotlib.
+validation = ["matplotlib>=3.9", "scipy>=1.14", "jinja2>=3.1"]
 
 [project.scripts]
 geif = "pipeline.cli:app"
 
 [tool.setuptools.packages.find]
 include = ["pipeline*"]
+
+# The LaTeX templates are data, not code, and are loaded by path at render
+# time — without this they are missing from a non-editable install and the
+# report fails only in the environment nobody tests in.
+[tool.setuptools.package-data]
+"pipeline.validation" = ["templates/*.tex", "templates/*.j2"]
 
 [tool.ruff]
 line-length = 100

@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -119,12 +120,40 @@ def build(
 
     crosswalks = {level: crosswalk.build(level) for level in levels}
 
-    for i, (name, level, y) in enumerate(plan, 1):
-        prefix = f"[dim][{i}/{len(plan)}][/dim] " if len(plan) > 1 else ""
-        console.print(f"{prefix}", end="")
+    # Grouped by source file, not by partition. Every geography for a given
+    # (dataset, year) reads the same 45-80 MB file, so fetching it once and
+    # joining it to each crosswalk turns a seven-level backfill from seven
+    # downloads per year into one.
+    by_source: dict[tuple[str, int], list[str]] = {}
+    for name, level, y in plan:
+        by_source.setdefault((name, y), []).append(level)
+
+    done = 0
+    for (name, y), source_levels in by_source.items():
+        outstanding = [
+            level for level in source_levels
+            if force or not aggregate.is_current(name, level, y)
+        ]
+        if not outstanding:
+            for level in source_levels:
+                done += 1
+                console.print(f"[dim][{done}/{len(plan)}] {name}/{level}/{y}: up to date[/dim]")
+            continue
+
         if not skip_validation:
             validate.validate_source(name, y).raise_if_failed()
-        aggregate.build(name, level, y, crosswalks[level], force=force)
+        source = aggregate.fetch_source(name, y)
+        try:
+            for level in source_levels:
+                done += 1
+                prefix = f"[dim][{done}/{len(plan)}][/dim] " if len(plan) > 1 else ""
+                console.print(f"{prefix}", end="")
+                aggregate.build(name, level, y, crosswalks[level], force=force,
+                                source_path=source)
+        finally:
+            # One year's mirror at a time. Keeping all 52 would be 3.5 GB of
+            # cache for a backfill nobody runs twice.
+            source.unlink(missing_ok=True)
 
 
 @app.command()
@@ -291,6 +320,98 @@ def refresh(
     catalog(base_url=base_url, merge_published=True)
     if bucket:
         publish(bucket=bucket, distribution_id=distribution_id, dry_run=False)
+
+
+@app.command()
+def validate_report(
+    section: str = typer.Option(
+        "", "--section", help="Comma-separated sections: A,B,C,D,E,F. Default all."
+    ),
+    tier: int = typer.Option(
+        3,
+        "--tier",
+        help="Highest tier to run. 0 local, 1 built artifacts, 2 source scans, "
+        "3 external benchmarks.",
+    ),
+    out: str = typer.Option("validation", "--out", help="Output directory"),
+    catalog_url: str = typer.Option(
+        None, "--catalog-url", help="Catalog to validate. Defaults to the published one."
+    ),
+    pdf: bool = typer.Option(True, "--pdf/--no-pdf", help="Typeset the report after running"),
+    local: bool = typer.Option(
+        False,
+        "--local",
+        help="Validate the local build tree instead of the published product. "
+        "For checking a fix before it goes out.",
+    ),
+) -> None:
+    """Run the validation checks and typeset the report.
+
+    Validates the PUBLISHED artifacts, not the local build tree — the site
+    fetches its catalog from the CDN at runtime, so what is published is what
+    users receive, and a report about `.build` would describe a build nobody
+    has.
+    """
+    from .validation import registry as vreg
+    from .validation import report as vreport
+
+    out_dir = config.REPO_ROOT / out if not out.startswith("/") else Path(out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    sections = [s.strip().upper() for s in section.split(",") if s.strip()] or None
+    checks = vreg.select(sections, max_tier=tier)
+    if not checks:
+        console.print("[yellow]No checks match that selection.[/yellow]")
+        raise typer.Exit(1)
+
+    target = "the local build tree (NOT the published product)" if local else "the published product"
+    ctx = vreg.Context(
+        out_dir=out_dir, catalog_url=catalog_url, max_tier=tier, prefer_local=local
+    )
+    console.print(
+        f"Running {len(checks)} checks "
+        f"(sections {', '.join(sorted({c.section for c in checks}))}; tiers 0-{tier}) "
+        f"against {target}"
+    )
+    results = vreg.run(checks, ctx)
+    meta = vreg.metadata(
+        tiers=list(range(tier + 1)),
+        sections=sorted({c.section for c in checks}),
+        target=target,
+    )
+
+    # The inventory describes the product rather than testing it, so a failure
+    # to build it must not cost the reader the check results.
+    inventory = []
+    try:
+        from .validation import inventory as vinventory
+
+        inventory = vinventory.build(ctx)
+    except Exception as exc:  # noqa: BLE001
+        console.print(f"[yellow]inventory unavailable: {type(exc).__name__}: {exc}[/yellow]")
+
+    vreport.write_results(results, meta, out_dir)
+    tex = vreport.render(results, meta, out_dir, inventory=inventory)
+
+    t = Table(title="Validation summary")
+    t.add_column("outcome"); t.add_column("n", justify="right")
+    for status in ("pass", "fail", "warn", "info", "skip"):
+        n = sum(1 for r in results if r.status == status)
+        if n:
+            t.add_row(status, str(n))
+    console.print(t)
+    for r in results:
+        if r.status == "fail":
+            console.print(f"[red]{r.id} FAILED[/red] — {r.title}")
+
+    if pdf:
+        pdf_path = vreport.compile_pdf(tex)
+        console.print(f"[green]{pdf_path}[/green]")
+    else:
+        console.print(f"[green]{tex}[/green] (not typeset)")
+
+    if any(r.status == "fail" for r in results):
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":

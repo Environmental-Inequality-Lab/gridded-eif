@@ -38,27 +38,117 @@ class Partition:
     geo_units: int
 
 
+SOURCE_CACHE = config.REPO_ROOT / ".cache" / "source"
+
+
+def is_current(dataset: str, geography: str, year: int) -> bool:
+    """Whether a built partition is up to date with the running pipeline.
+
+    Exposed so the build loop can decide whether a source file is worth
+    downloading at all, rather than fetching 70 MB to discover that all seven
+    geographies were already built.
+
+    Keyed on the pipeline version, which is what makes a MAJOR bump force a
+    rebuild: an aggregation change that moves published numbers must not be
+    able to leave stale partitions behind that still look finished.
+    """
+    out_path = BUILD_DIR / config.derived_key(dataset, geography, year)
+    ledger = _ledger_path(dataset, geography, year)
+    if not (out_path.exists() and ledger.exists()):
+        return False
+    return json.loads(ledger.read_text()).get("pipeline_version") == __version__
+
+
+def fetch_source(dataset: str, year: int, force: bool = False) -> Path:
+    """Mirror one source file locally so every geography can share the read.
+
+    A full build touches seven geography levels per (dataset, year). Reading
+    the source over the network once per level means seven downloads of a
+    45--80 MB file to produce seven small partitions, and the download
+    dominates. Fetching once and joining seven times against a local copy cuts
+    a full backfill from 364 remote reads to 52.
+
+    The file is a byte-for-byte mirror, so this is a cache, not a
+    transformation — nothing downstream can tell the difference except in how
+    long it waits.
+    """
+    SOURCE_CACHE.mkdir(parents=True, exist_ok=True)
+    url = config.source_url(dataset, year)
+    dest = SOURCE_CACHE / url.rsplit("/", 1)[-1]
+    if dest.exists() and not force:
+        return dest
+
+    import time
+
+    import requests
+
+    # Reading through DuckDB's httpfs used to hide this: it retries a dropped
+    # range read by itself. Fetching the file directly means owning that, and a
+    # 52-file backfill will see at least one reset — losing a half-hour run to
+    # one is not acceptable.
+    tmp = dest.with_suffix(dest.suffix + ".part")
+    last: Exception | None = None
+    for attempt in range(1, 6):
+        try:
+            console.print(
+                f"[dim]fetching {dest.name}"
+                + (f" (attempt {attempt})" if attempt > 1 else "")
+                + "[/dim]"
+            )
+            written = 0
+            with requests.get(url, timeout=1800, stream=True) as resp:
+                resp.raise_for_status()
+                expected = int(resp.headers.get("content-length", 0))
+                with tmp.open("wb") as fh:
+                    for chunk in resp.iter_content(1 << 22):
+                        fh.write(chunk)
+                        written += len(chunk)
+            # A truncated body that is never checked becomes a cached file that
+            # builds short partitions and looks entirely healthy doing it.
+            if expected and written != expected:
+                raise OSError(f"truncated download: {written:,} of {expected:,} bytes")
+            # Rename only once the body is complete and verified.
+            tmp.rename(dest)
+            return dest
+        except (requests.RequestException, OSError) as exc:
+            last = exc
+            tmp.unlink(missing_ok=True)
+            if attempt < 5:
+                backoff = 2 ** (attempt - 1)
+                console.print(
+                    f"[yellow]{dest.name}: {type(exc).__name__}, retrying in {backoff}s"
+                    f"[/yellow]"
+                )
+                time.sleep(backoff)
+
+    raise RuntimeError(f"could not fetch {url} after 5 attempts: {last}") from last
+
+
 def build(
     dataset: str,
     geography: str,
     year: int,
     crosswalk_path: Path,
     force: bool = False,
+    source_path: Path | None = None,
 ) -> Partition:
-    """Aggregate one (dataset, geography, year) partition."""
+    """Aggregate one (dataset, geography, year) partition.
+
+    `source_path` points at a local mirror of the source file. It changes
+    nothing about the result — the bytes are identical — only where they are
+    read from.
+    """
     ds = config.datasets()[dataset]
     out_dir = BUILD_DIR / config.derived_key(dataset, geography, year)
     out_path = out_dir.parent / f"{out_dir.name}"
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     ledger = _ledger_path(dataset, geography, year)
-    if out_path.exists() and ledger.exists() and not force:
-        recorded = json.loads(ledger.read_text())
-        if recorded.get("pipeline_version") == __version__:
-            console.print(f"[dim]{dataset}/{geography}/{year}: up to date[/dim]")
-            return Partition(**recorded)
+    if not force and is_current(dataset, geography, year):
+        console.print(f"[dim]{dataset}/{geography}/{year}: up to date[/dim]")
+        return Partition(**json.loads(ledger.read_text()))
 
-    url = config.source_url(dataset, year)
+    url = source_path.as_posix() if source_path else config.source_url(dataset, year)
     measures = config.measure_columns()
     measure_sql = ", ".join(f"sum(d.{m}) AS {m}" for m in measures)
 

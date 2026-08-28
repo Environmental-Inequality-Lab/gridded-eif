@@ -1,0 +1,127 @@
+name: Validation report
+
+# The typeset report, against whatever is currently published.
+#
+# Separate from `refresh-data` on purpose. That workflow validates a refresh at
+# the moment it happens — a gate before publishing and a confirmation after —
+# and neither step typesets anything, because a PDF is not what you want in the
+# way of a data release.
+#
+# This one produces the document: the artifact you would attach to a paper or
+# hand to someone asking whether the numbers can be trusted. It also runs on a
+# schedule, which catches the class of problem a refresh-triggered check never
+# will — the CDN losing an object, an upstream file being revised in place, or a
+# claim the site makes drifting away from what the data now shows. Nothing has
+# to change here for this to start failing, which is the point.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sections:
+        description: "Sections to run, comma-separated (A,B,C,D,E,F)"
+        required: false
+        default: "A,C"
+        type: string
+      tier:
+        description: "Highest tier — 2 is the published product, 3 adds full checksums and external benchmarks"
+        required: false
+        default: "2"
+        type: string
+  schedule:
+    # Monthly. Frequent enough that a silent regression is caught within weeks,
+    # infrequent enough that a failure is worth reading.
+    - cron: "0 7 1 * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validation-report
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      # Only the ACS checks need this, and they record themselves as skipped
+      # when it is absent rather than failing or, worse, passing silently.
+      CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[validation]"
+
+      # TeX Live is the one heavy dependency in this repo, which is why no other
+      # job installs it. recommended-only keeps it to a few hundred megabytes;
+      # the document needs booktabs, siunitx, threeparttable and Latin Modern,
+      # all of which are in the recommended set.
+      - name: Install TeX Live
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            latexmk
+
+      # Boundary shapefiles, for the checks that adjudicate a dropped cell by
+      # distance to the nearest polygon. Content-addressed on the registry so a
+      # geography change starts a fresh cache rather than restoring stale
+      # geometry.
+      - name: Cache boundaries
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: geif-cache-${{ hashFiles('pipeline/**', 'catalog/variables.yaml') }}-${{ github.run_id }}
+          restore-keys: |
+            geif-cache-${{ hashFiles('pipeline/**', 'catalog/variables.yaml') }}-
+
+      - name: Run the validation report
+        run: |
+          geif validate-report \
+            --section "${{ inputs.sections || 'A,C' }}" \
+            --tier "${{ inputs.tier || 2 }}" \
+            --out validation
+
+      # `always()`: a failing check is precisely when the document matters, and
+      # the run exits non-zero when anything fails.
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report
+          path: |
+            validation/appendix.pdf
+            validation/results.json
+          if-no-files-found: warn
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Validation report"
+            echo ''
+            python -c "
+          import json, pathlib
+          p = pathlib.Path('validation/results.json')
+          if not p.exists():
+              print('The report did not produce results.')
+              raise SystemExit
+          d = json.loads(p.read_text())
+          m = d['metadata']
+          print(f\"Validated: {m['target']}\")
+          print(f\"Commit \`{m['commit'][:12]}\` · pipeline {m['pipeline_version']} · derived {m['derived_version']}\")
+          print('')
+          print('| ID | Result | Check |')
+          print('|---|---|---|')
+          for r in d['results']:
+              print(f\"| {r['id']} | {r['status']} | {r['title']} |\")
+          "
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -17,9 +17,15 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e ".[dev]"
+      # The validation extra is needed even though this job runs no report: the
+      # validation package imports jinja2 and matplotlib at module level, so
+      # collecting the tests imports them.
+      - run: pip install -e ".[dev,validation]"
       - name: Lint
         run: ruff check pipeline tests
+      # pytest renders the full report template against a synthetic result set,
+      # so a broken template fails here without needing a TeX distribution or a
+      # network round trip.
       - name: Tests
         run: pytest -q
 
