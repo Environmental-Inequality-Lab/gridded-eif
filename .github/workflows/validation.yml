@@ -48,6 +48,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
+      # Where the published product lives. Without it every check that reads the
+      # catalog fails identically, which reads as nine defects rather than one
+      # missing variable.
+      GEIF_BASE_URL: ${{ vars.GEIF_BASE_URL }}
       # Only the ACS checks need this, and they record themselves as skipped
       # when it is absent rather than failing or, worse, passing silently.
       CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
@@ -76,7 +80,27 @@ jobs:
             texlive-latex-recommended \
             texlive-latex-extra \
             texlive-fonts-recommended \
+            texlive-science \
+            lmodern \
             latexmk
+
+      # Every package the preamble asks for, resolved before the report runs.
+      # Derived from preamble.tex rather than hardcoded, so adding a package
+      # there cannot fail three minutes later inside pdflatex with a message
+      # that names a line number and not a missing dependency.
+      - name: Check every LaTeX package the document needs is installed
+        run: |
+          missing=0
+          while read -r pkg; do
+            if ! kpsewhich "$pkg.sty" > /dev/null; then
+              echo "::error::LaTeX package '$pkg' is not installed"
+              missing=1
+            fi
+          done < <(grep -oE '\\usepackage(\[[^]]*\])?\{[^}]+\}' \
+                     pipeline/validation/templates/preamble.tex \
+                   | sed -E 's/.*\{([^}]+)\}/\1/' | tr ',' '\n' | tr -d ' ')
+          [ "$missing" -eq 0 ] || exit 1
+          echo "all LaTeX packages resolve"
 
       # Boundary shapefiles, for the checks that adjudicate a dropped cell by
       # distance to the nearest polygon. Content-addressed on the registry so a

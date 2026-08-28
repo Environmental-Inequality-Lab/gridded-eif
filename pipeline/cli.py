@@ -372,6 +372,29 @@ def validate_report(
         prefer_local=local,
         render_figures=pdf,
     )
+    # Preflight the catalog. Nearly every tier-2 check reads it, so when it is
+    # unreachable they all fail identically and in no time at all — which reads
+    # as a product riddled with defects rather than as one unset variable. One
+    # legible error up front is worth more than nine tracebacks.
+    if any(c.tier >= 2 for c in checks):
+        try:
+            ctx.catalog()
+        except Exception as exc:  # noqa: BLE001 — reported, not swallowed
+            message = f"Cannot read the published catalog: {type(exc).__name__}: {exc}"
+            if local:
+                console.print(f"[yellow]{message}[/yellow]")
+                console.print(
+                    "[yellow]Continuing: --local reads the build tree, but any check "
+                    "of the published product will fail.[/yellow]"
+                )
+            else:
+                console.print(f"[red]{message}[/red]")
+                console.print(
+                    "[red]Set GEIF_BASE_URL or pass --catalog-url. Checks that read "
+                    "the published product cannot run without it.[/red]"
+                )
+                raise typer.Exit(1) from None
+
     console.print(
         f"Running {len(checks)} checks "
         f"(sections {', '.join(sorted({c.section for c in checks}))}; tiers 0-{tier}) "
