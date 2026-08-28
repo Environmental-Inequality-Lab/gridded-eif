@@ -159,9 +159,17 @@ absent, never as passing.
 its catalog from the CDN at runtime, so what is published is what users receive;
 a report about the local build tree would describe a build nobody has.
 
-Output lands in `validation/`: `results.json` is tracked, so diffing it across
-commits shows regressions in the *data* rather than in the code. The PDF and the
-LaTeX intermediates are not.
+Output lands in `validation/`. Both the report and its machine-readable results
+are tracked:
+
+| File | Why it is in the repository |
+|---|---|
+| `validation/gridded-eif-validation.pdf` | Browsable on GitHub without downloading a CI artifact |
+| `validation/results.json` | Diffing it across commits shows regressions in the *data* rather than in the code |
+
+LaTeX intermediates are not tracked. Neither file lives under `site/`, so the
+report is not deployed to GitHub Pages and nothing on the site links to it —
+adding a link later is a one-line change.
 
 ### When it runs
 
@@ -169,7 +177,7 @@ LaTeX intermediates are not.
 |---|---|---|
 | `ci.yml` | every push, PR | Tests, lint, and the renderer against a synthetic result set |
 | `refresh-data.yml` | manual, quarterly | **Gates the publish.** Validates the build tree before upload, then re-validates the published product after |
-| `validation.yml` | manual, monthly | The typeset PDF against whatever is currently published, uploaded as an artifact |
+| `validation.yml` | manual, monthly | The typeset PDF against whatever is currently published, committed back to the repository |
 
 The gate is the important one. It runs `--local` against what was just built, and
 a failure stops the run before anything reaches the CDN — a validation step that

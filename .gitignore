@@ -113,18 +113,21 @@ site/_names/
 .claude/
 
 # --- Validation report -------------------------------------------------------
-# LaTeX intermediates and the generated document. results.json is the durable
-# artifact and IS tracked: it is the machine-readable record of what a given
-# commit validated, and diffing it across commits is how a regression in the
-# data — as opposed to in the code — becomes visible.
+# LaTeX intermediates only. The report itself — appendix.pdf and results.json
+# — IS tracked. The PDF so it is browsable on GitHub without downloading a CI
+# artifact, and results.json because diffing it across commits is how a
+# regression in the data, as opposed to in the code, becomes visible.
+#
+# The report is deliberately NOT under site/, so it is not deployed to Pages and
+# nothing on the site links to it. Adding a link later is a one-line change to
+# the site; until then it is a repository document, not a published one.
 validation/*.aux
 validation/*.log
 validation/*.out
 validation/*.fls
 validation/*.fdb_latexmk
 validation/*.toc
-validation/*.pdf
-validation/appendix.tex
+validation/gridded-eif-validation.tex
 validation/preamble.tex
 validation/figures/
 validation/catalog-snapshot.json

@@ -242,7 +242,7 @@ def render(
         sql_blocks=sql_blocks,
         inventory=inventory or [],
     )
-    path = out_dir / "appendix.tex"
+    path = out_dir / "gridded-eif-validation.tex"
     path.write_text(tex)
     return path
 
