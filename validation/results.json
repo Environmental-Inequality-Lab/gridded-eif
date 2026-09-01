@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-08-28T20:27:36+00:00",
-    "commit": "03f550167d9c696e2fe79a4f5e1144fda3bf67be",
+    "generated_at": "2026-09-01T12:31:37+00:00",
+    "commit": "6e8c6397d4ed62f8a1105d2ed4428743477870e7",
     "commit_dirty": false,
     "pipeline_version": "1.0.0",
     "registry_version": "1.0.0",
@@ -438,7 +438,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 2.2218324890000076,
+      "runtime_s": 2.7313559139999484,
       "error": null
     },
     {
@@ -895,7 +895,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 91.713427808,
+      "runtime_s": 62.63069626600003,
       "error": null
     },
     {
@@ -1273,7 +1273,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 55.47418882399998,
+      "runtime_s": 46.946641838000005,
       "error": null
     },
     {
@@ -1315,7 +1315,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 5.475584144999971,
+      "runtime_s": 4.717443086999992,
       "error": null
     },
     {
@@ -1391,7 +1391,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 0.0006707060000508136,
+      "runtime_s": 0.0006624799999599418,
       "error": null
     },
     {
@@ -1904,7 +1904,7 @@
         "WITH src AS (\n            SELECT grid_lon, grid_lat, sum(n_noise) AS pop\n            FROM read_parquet('<source file>') GROUP BY 1, 2\n        )\n        SELECT count(*)                                        AS cells,\n               sum(src.pop)                                    AS pop,\n               count(*) FILTER (WHERE x.geo_id IS NULL)        AS cells_missing,\n               coalesce(sum(src.pop) FILTER (WHERE x.geo_id IS NULL), 0) AS pop_missing\n        FROM src LEFT JOIN read_parquet('<crosswalk>') x USING (grid_lon, grid_lat)"
       ],
       "skipped_because": null,
-      "runtime_s": 41.63586887400004,
+      "runtime_s": 36.766495770999995,
       "error": null
     },
     {
@@ -2005,7 +2005,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 4.986070820000009,
+      "runtime_s": 3.4917695820000176,
       "error": null
     },
     {
@@ -2111,7 +2111,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 0.6844724950000227,
+      "runtime_s": 0.7122535850000418,
       "error": null
     },
     {
@@ -2189,7 +2189,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 68.17354104200001,
+      "runtime_s": 1.5132822420000025,
       "error": null
     },
     {
@@ -2276,7 +2276,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 1.0233628830000043,
+      "runtime_s": 0.9187106770000355,
       "error": null
     },
     {
@@ -2501,7 +2501,7 @@
       ],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 28.206829982000045,
+      "runtime_s": 27.961778167999967,
       "error": null
     },
     {
@@ -2549,7 +2549,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 28.687702763999994,
+      "runtime_s": 27.389993008000033,
       "error": null
     },
     {
@@ -2603,7 +2603,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 0.9252306380000164,
+      "runtime_s": 0.872218308000015,
       "error": null
     }
   ]
