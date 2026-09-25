@@ -176,6 +176,13 @@ def build(
             g: f"{base_url.rstrip('/')}/{config.names_key(g)}"
             for g in sorted({e["geography"] for e in entries})
         },
+        # geo_id -> {aland_m2, awater_m2}, straight from the TIGER attribute
+        # table. Published so computing a population density does not mean
+        # re-downloading the shapefiles this pipeline already reads.
+        "areas": {
+            g: f"{base_url.rstrip('/')}/{config.areas_key(g)}"
+            for g in sorted({e["geography"] for e in entries})
+        },
         # Grid-cell to geography assignments. Published so anyone can reuse the
         # spatial join — for the source files we do not aggregate, or for
         # geographies we do not offer.

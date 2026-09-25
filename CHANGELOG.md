@@ -10,6 +10,38 @@ Versioning: [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- **Land and water area per place** (`geif areas`), published as
+  `derived/v1/_areas/{geography}.json` mapping `geo_id` to
+  `{aland_m2, awater_m2}`. Taken from TIGER's own `ALAND`/`AWATER` attributes,
+  which the crosswalk step already downloads, so a consumer computing
+  population density no longer re-downloads the shapefiles and parses the DBF
+  itself. Not measured from the published boundaries: those are simplified for
+  the map, so measuring them would give areas for shapes nobody treats as
+  authoritative. Commuting zones sum over their component counties and the
+  national level sums over states, so derived levels agree with their parents
+  by construction rather than by coincidence.
+- Validation checks `B1` and `B2`, the first in the boundaries and geometry
+  section. `B1` holds the name and area lookups to the same set of places and
+  rejects a land area of zero — which divides rather than drops, producing an
+  infinite density. `B2` compares land-area totals across every
+  complete-coverage level and against the published Census figure; the
+  cross-level comparison is the stronger of the two, catching a single
+  mis-stated state area that sits well inside the magnitude tolerance.
+
+### Fixed
+- **Ten Puerto Rico commuting zones were published as searchable names with no
+  data behind them.** `build_names` filters out units that receive no grid
+  cells — the comment on that filter names Puerto Rico explicitly — but the
+  `built_from` branch returned before reaching it, so the ERS delineation's own
+  coverage leaked through. `czone2020` drops from 598 names to 588, matching
+  the units that carry data at every other level. Found while designing the
+  area coverage check, which the mismatch would have failed.
+- `_select_columns` now applies its passthrough fields on both paths. ZCTA uses
+  one column for both id and name, and that case returned early before the
+  passthrough ran, so ZCTA carried no `ALAND` and areas could not be built for
+  it at all.
+
 ### Changed
 - `C1` no longer passes merely because nothing was dropped. It adjudicates each
   dropped cell geometrically: a cell is a legitimate exclusion only if it lies

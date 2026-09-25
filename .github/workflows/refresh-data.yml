@@ -91,6 +91,13 @@ jobs:
       - name: Build name lookups
         run: geif names --geography "${{ inputs.geography }}"
 
+      # Land and water area per place, straight off the TIGER attribute table
+      # the crosswalk step already downloads. Published so a consumer computing
+      # population density does not re-download the same shapefiles to parse the
+      # same two columns.
+      - name: Build area lookups
+        run: geif areas --geography "${{ inputs.geography }}"
+
       # The spatial join, published for reuse. Independent of the aggregates.
       - name: Publish crosswalks
         run: geif crosswalks --geography "${{ inputs.geography }}"

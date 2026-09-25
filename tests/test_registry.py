@@ -393,3 +393,55 @@ def test_disabled_geography_refuses_with_its_reason():
 
     # An enabled level still resolves normally.
     assert config.resolve_geography("county").name == "county"
+
+
+# --- area lookups -------------------------------------------------------------
+
+
+def test_areas_are_version_prefixed_like_names():
+    """An area belongs to a boundary vintage, so it moves when boundaries do."""
+    for geography in ("county", "state", "czone2020"):
+        key = config.areas_key(geography)
+        assert key.startswith(f"derived/{config.DERIVED_VERSION}/_areas/")
+        assert key.endswith(".json")
+        # Same shape as the sidecar it mirrors, differing only in the folder.
+        assert key.replace("_areas", "_names") == config.names_key(geography)
+
+
+def test_area_fields_cover_tigers_suffixed_variants():
+    """TIGER marks its 2020-redelineated layers with a `20` suffix.
+
+    PUMA and ZCTA carry ALAND20/AWATER20 where county, state and CBSA carry the
+    bare names, so both spellings must map to the same normalised column.
+    """
+    from pipeline.crosswalk import _EXTRA_FIELDS
+
+    mapping = dict(_EXTRA_FIELDS)
+    assert mapping["ALAND"] == mapping["ALAND20"] == "_aland"
+    assert mapping["AWATER"] == mapping["AWATER20"] == "_awater"
+
+
+def test_extra_fields_survive_a_collapsed_id_and_name_column():
+    """Regression: ZCTA uses one column for both id and name.
+
+    That path returned early before the passthrough ran, so ZCTA came back with
+    no ALAND at all and areas could not be built for it.
+    """
+    import geopandas as gpd
+    from shapely.geometry import Point
+
+    from pipeline.crosswalk import _select_columns
+
+    geo = config.geographies()["zcta"]
+    assert geo.id_field == geo.name_field, "this test is about the collapsed case"
+
+    gdf = gpd.GeoDataFrame(
+        {geo.id_field: ["12345"], "ALAND20": [1000], "AWATER20": [7]},
+        geometry=[Point(0, 0)],
+        crs="EPSG:4326",
+    )
+    out = _select_columns(gdf, geo, keep_extra=True)
+    assert out["_geo_id"].iloc[0] == "12345"
+    assert out["_geo_name"].iloc[0] == "12345"
+    assert out["_aland"].iloc[0] == 1000
+    assert out["_awater"].iloc[0] == 7

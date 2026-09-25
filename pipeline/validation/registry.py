@@ -188,6 +188,41 @@ class Context:
             return None
         return (self.catalog().get("crosswalks") or {}).get(geography)
 
+    def lookup(self, kind: str, geography: str) -> dict | None:
+        """Read a published JSON sidecar — ``names`` or ``areas`` — as a dict.
+
+        Local resolution prefers the build tree, matching `crosswalk_source`, so
+        a `--local` run validates what is about to be published rather than what
+        already is. Returns None when the artifact does not exist, which a check
+        should report as a skip rather than a failure: a file that was never
+        built is not a defect in the data.
+        """
+        import json as _json
+
+        key = {"names": config.names_key, "areas": config.areas_key}[kind]
+        if self.prefer_local:
+            path = self.build_dir / key(geography)
+            return _json.loads(path.read_text()) if path.exists() else None
+
+        url = (self.catalog().get(kind) or {}).get(geography)
+        if not url:
+            return None
+        import requests
+
+        resp = requests.get(url, timeout=120)
+        if resp.status_code != 200:
+            return None
+        return resp.json()
+
+    def lookup_geographies(self, kind: str) -> list[str]:
+        if self.prefer_local:
+            key = {"names": config.names_key, "areas": config.areas_key}[kind]
+            return sorted(
+                g for g in config.geographies()
+                if (self.build_dir / key(g)).exists()
+            )
+        return sorted(self.catalog().get(kind) or {})
+
     def crosswalk_geographies(self) -> list[str]:
         if self.prefer_local:
             return sorted(

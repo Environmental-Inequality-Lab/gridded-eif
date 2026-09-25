@@ -207,6 +207,17 @@ def names_key(geography: str) -> str:
     return f"derived/{DERIVED_VERSION}/_names/{geography}.json"
 
 
+def areas_key(geography: str) -> str:
+    """S3 key for a geography's id -> land and water area lookup.
+
+    Published so a consumer computing population density does not have to
+    re-download TIGER and parse the DBF for numbers this pipeline already has
+    in hand. Version-prefixed for the same reason as names: an area is a
+    property of a boundary vintage, so it must move when the boundaries do.
+    """
+    return f"derived/{DERIVED_VERSION}/_areas/{geography}.json"
+
+
 class GeographyDisabled(Exception):
     """Raised when a deliberately disabled geography level is requested."""
 

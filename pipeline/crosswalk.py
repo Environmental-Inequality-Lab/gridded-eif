@@ -201,23 +201,60 @@ def _load_boundaries(geo: config.Geography, keep_extra: bool = False) -> gpd.Geo
     return _select_columns(gdf, geo, keep_extra)
 
 
-def _select_columns(gdf, geo: config.Geography, keep_extra: bool) -> gpd.GeoDataFrame:
-    # ZCTAs have no name distinct from their code, so id_field and name_field
-    # are the same column. Keyed by source column, that collapses to a single
-    # entry and _geo_id is never produced — so copy instead of renaming.
-    if geo.id_field == geo.name_field:
-        out = gdf[[geo.id_field, "geometry"]].rename(columns={geo.id_field: "_geo_id"})
-        out["_geo_name"] = out["_geo_id"]
-        return gpd.GeoDataFrame(out, geometry="geometry", crs=gdf.crs)
+# Attribute-table fields the name and area builders need but the spatial join
+# does not. The `20` suffixes are TIGER's vintage marking on the layers it
+# redelineated for 2020 — PUMA and ZCTA carry ALAND20/AWATER20 where county,
+# state and CBSA carry the bare names.
+_EXTRA_FIELDS = (
+    ("NAMELSAD", "_namelsad"), ("NAMELSAD20", "_namelsad"),
+    ("STUSPS", "_stusps"),
+    ("ALAND", "_aland"), ("ALAND20", "_aland"),
+    ("AWATER", "_awater"), ("AWATER20", "_awater"),
+)
 
+
+def _select_columns(gdf, geo: config.Geography, keep_extra: bool) -> gpd.GeoDataFrame:
     cols = {geo.id_field: "_geo_id", geo.name_field: "_geo_name"}
+
+    # ZCTAs have no name distinct from their code, so id_field and name_field
+    # are the same column. Keyed by source column that collapses to a single
+    # entry and _geo_id is never produced, so the name is copied afterwards
+    # instead of renamed. The extras still apply — reading them only on the
+    # two-field path is how ZCTA ended up with no area at all.
+    collapsed = geo.id_field == geo.name_field
+    if collapsed:
+        cols = {geo.id_field: "_geo_id"}
+
     if keep_extra:
-        # Fields the name builder needs but the spatial join does not.
-        for src, dst in (("NAMELSAD", "_namelsad"), ("NAMELSAD20", "_namelsad"),
-                         ("STUSPS", "_stusps")):
+        for src, dst in _EXTRA_FIELDS:
             if src in gdf.columns and dst not in cols.values():
                 cols[src] = dst
-    return gdf[[*cols, "geometry"]].rename(columns=cols)
+
+    out = gdf[[*cols, "geometry"]].rename(columns=cols)
+    if collapsed:
+        out["_geo_name"] = out["_geo_id"]
+    return gpd.GeoDataFrame(out, geometry="geometry", crs=gdf.crs)
+
+
+def _units_with_data(geography: str) -> set[str] | None:
+    """Units that actually receive grid cells, or None if not yet known.
+
+    TIGER includes Puerto Rico, the USVI, Guam, American Samoa and the Northern
+    Marianas, none of which the source data covers. Publishing a name or an area
+    for one of them offers a place that returns nothing — and, for an area, a
+    denominator with no numerator.
+
+    None rather than an empty set when the crosswalk has not been built, so a
+    caller can tell "no filter available" from "nothing survives the filter".
+    """
+    xwalk = CACHE / f"xwalk_{geography}.parquet"
+    if not xwalk.exists():
+        return None
+    return set(
+        duckdb.connect()
+        .execute(f"SELECT DISTINCT geo_id FROM read_parquet('{xwalk.as_posix()}')")
+        .df()["geo_id"]
+    )
 
 
 def build_names(geography: str, force: bool = False) -> Path:
@@ -244,23 +281,19 @@ def build_names(geography: str, force: bool = False) -> Path:
 
     if geo.built_from:
         _, labels = _load_id_crosswalk(geo)
+        # The same filter the TIGER-backed path applies below. Without it the
+        # crosswalk source file's own coverage leaks through: the ERS commuting
+        # zone delineation includes Puerto Rico, so ten PR zones were published
+        # as searchable names that return nothing — exactly what the filter
+        # exists to prevent.
+        with_data = _units_with_data(geography)
+        if with_data is not None:
+            labels = {k: v for k, v in labels.items() if k in with_data}
         out.write_text(json.dumps(labels, sort_keys=True))
         console.print(f"[green]names {geography}: {len(labels):,} entries[/green]")
         return out
 
-    # Restrict to units that actually carry data. TIGER includes Puerto Rico,
-    # the USVI, Guam, American Samoa, and the Northern Marianas, none of which
-    # the source data covers — listing them would offer a searchable place that
-    # returns nothing.
-    with_data = None
-    xwalk = CACHE / f"xwalk_{geography}.parquet"
-    if xwalk.exists():
-        with_data = set(
-            duckdb.connect()
-            .execute(f"SELECT DISTINCT geo_id FROM read_parquet('{xwalk.as_posix()}')")
-            .df()["geo_id"]
-        )
-
+    with_data = _units_with_data(geography)
     shapes = _load_boundaries(geo, keep_extra=True)
     if with_data is not None:
         shapes = shapes[shapes["_geo_id"].isin(with_data)]
@@ -283,6 +316,91 @@ def build_names(geography: str, force: bool = False) -> Path:
 
     out.write_text(json.dumps(labels, sort_keys=True))
     console.print(f"[green]names {geography}: {len(labels):,} entries[/green]")
+    return out
+
+
+def build_areas(geography: str, force: bool = False) -> Path:
+    """Write a geo_id -> {aland_m2, awater_m2} lookup for one geography level.
+
+    Land area is the denominator in a population density, and it is already on
+    the TIGER attribute table this pipeline downloads for the spatial join.
+    Publishing it means a consumer computing density does not re-download the
+    same shapefiles to parse the same two columns.
+
+    Areas come from TIGER's own ALAND/AWATER rather than from computed geometry.
+    That is deliberate: the published boundaries are simplified for the map, so
+    measuring them would give an area for a shape nobody treats as
+    authoritative, and it would disagree with every other source quoting the
+    Census figure. These are the Census numbers, in square metres, unrounded.
+
+    Kept under the derived version prefix for the same reason as names: an area
+    belongs to a boundary vintage.
+    """
+    CACHE.mkdir(exist_ok=True)
+    out = CACHE / f"areas_{geography}.json"
+    if out.exists() and not force:
+        return out
+
+    geo = config.geographies()[geography]
+
+    # The national level has no shapefile of its own — it is every state, so
+    # its area is their sum. Derived rather than fetched, which also keeps it
+    # consistent with the state file by construction.
+    if geo.source == "constant":
+        states = json.loads(build_areas("state", force=force).read_text())
+        total = {
+            "aland_m2": sum(v["aland_m2"] for v in states.values()),
+            "awater_m2": sum(v["awater_m2"] for v in states.values()),
+        }
+        out.write_text(json.dumps({geo.constant_id: total}, sort_keys=True))
+        console.print(
+            f"[green]areas {geography}: 1 entry, "
+            f"{total['aland_m2'] / 1e12:.2f}M km2 land[/green]"
+        )
+        return out
+
+    # Commuting zones group whole counties and have no shapefile, so their area
+    # is the sum over their components. Summing the parent's published areas
+    # rather than re-reading TIGER guarantees the two levels agree.
+    if geo.built_from:
+        parent = json.loads(build_areas(geo.built_from, force=force).read_text())
+        mapping, _ = _load_id_crosswalk(geo)
+        areas: dict[str, dict[str, int]] = {}
+        for parent_id, child_id in mapping.items():
+            part = parent.get(parent_id)
+            if part is None:
+                # A parent unit carrying no data, already filtered out upstream.
+                continue
+            acc = areas.setdefault(child_id, {"aland_m2": 0, "awater_m2": 0})
+            acc["aland_m2"] += part["aland_m2"]
+            acc["awater_m2"] += part["awater_m2"]
+        out.write_text(json.dumps(areas, sort_keys=True))
+        console.print(
+            f"[green]areas {geography}: {len(areas):,} entries "
+            f"(summed from {geo.built_from})[/green]"
+        )
+        return out
+
+    shapes = _load_boundaries(geo, keep_extra=True)
+    if "_aland" not in shapes.columns:
+        raise ValueError(
+            f"{geography}: the TIGER layer carries no ALAND column "
+            f"(found {sorted(shapes.columns)}). Areas cannot be published for it."
+        )
+    with_data = _units_with_data(geography)
+    if with_data is not None:
+        shapes = shapes[shapes["_geo_id"].isin(with_data)]
+
+    areas = {
+        r["_geo_id"]: {"aland_m2": int(r["_aland"]), "awater_m2": int(r["_awater"])}
+        for _, r in shapes.iterrows()
+    }
+    out.write_text(json.dumps(areas, sort_keys=True))
+    land = sum(v["aland_m2"] for v in areas.values())
+    console.print(
+        f"[green]areas {geography}: {len(areas):,} entries, "
+        f"{land / 1e12:.2f}M km2 land[/green]"
+    )
     return out
 
 

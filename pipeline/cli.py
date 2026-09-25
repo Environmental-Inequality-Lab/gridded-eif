@@ -199,6 +199,29 @@ def names(
 
 
 @app.command()
+def areas(
+    geography: str = typer.Option(None, "--geography", help="Default: every level built"),
+    force: bool = typer.Option(False, "--force"),
+) -> None:
+    """Build geo_id -> land and water area lookups, for density denominators.
+
+    The numbers are already on the TIGER attribute table this pipeline
+    downloads for the spatial join, so publishing them saves every consumer
+    computing a density from re-downloading the same shapefiles.
+    """
+    if geography:
+        levels = [g.strip() for g in geography.split(",")]
+    else:
+        led = BUILD_DIR / "_ledger"
+        levels = sorted({p.parent.name for p in led.rglob("*.json") if p.parent.name != "_combined"})
+    for level in levels:
+        src = crosswalk.build_areas(level, force=force)
+        dest = BUILD_DIR / config.areas_key(level)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(src.read_text())
+
+
+@app.command()
 def crosswalks(
     geography: str = typer.Option(None, "--geography", help="Default: every level built"),
 ) -> None:
@@ -314,6 +337,7 @@ def refresh(
         force=False,
     )
     names(geography=geography)
+    areas(geography=geography)
     crosswalks(geography=geography)
     boundaries(geography=geography)
     combine(geography=geography, dataset=None, base_url=base_url)

@@ -104,6 +104,23 @@ instead of the published one, append `?catalog=./catalog.json` after running
 | `site/` | The explorer. Static files, no build step. |
 | `prototype/` | Early reconnaissance scripts. Superseded by `pipeline/`. |
 
+Each geography also gets three small, year-independent sidecar files under the
+same versioned prefix as the data:
+
+| Path | Contents |
+|---|---|
+| `derived/v1/_names/{geography}.json` | `geo_id` → display name |
+| `derived/v1/_areas/{geography}.json` | `geo_id` → `{aland_m2, awater_m2}` |
+| `derived/v1/_boundaries/{geography}.geojson` | `geo_id` → simplified geometry |
+
+Areas are TIGER's own `ALAND`/`AWATER` attributes, published so that computing a
+population density does not mean re-downloading the shapefiles this pipeline
+already reads. They are deliberately *not* measured from the simplified
+boundaries: those are generalised for the map, so measuring them would give
+areas for shapes nobody treats as authoritative and would disagree with every
+other source quoting the Census figure. All three are version-prefixed because
+each belongs to a TIGER boundary vintage.
+
 **Adding a dataset, year, or geography should mean editing `variables.yaml` only.**
 If it requires touching a pipeline module or a UI component, that's a bug.
 
