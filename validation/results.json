@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-09-01T12:31:37+00:00",
-    "commit": "6e8c6397d4ed62f8a1105d2ed4428743477870e7",
+    "generated_at": "2026-09-25T17:43:09+00:00",
+    "commit": "e64fb7f19e0bd38d07d658d6710f5319dc8139fd",
     "commit_dirty": false,
     "pipeline_version": "1.0.0",
     "registry_version": "1.0.0",
@@ -17,6 +17,7 @@
     ],
     "sections_run": [
       "A",
+      "B",
       "C"
     ],
     "target": "the published product"
@@ -438,7 +439,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 2.7313559139999484,
+      "runtime_s": 2.42449749900004,
       "error": null
     },
     {
@@ -895,7 +896,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 62.63069626600003,
+      "runtime_s": 141.78589302,
       "error": null
     },
     {
@@ -1273,7 +1274,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 46.946641838000005,
+      "runtime_s": 58.784973151999964,
       "error": null
     },
     {
@@ -1315,7 +1316,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 4.717443086999992,
+      "runtime_s": 6.497213780000038,
       "error": null
     },
     {
@@ -1391,7 +1392,274 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 0.0006624799999599418,
+      "runtime_s": 0.0007170410000298943,
+      "error": null
+    },
+    {
+      "id": "B1",
+      "section": "B",
+      "title": "Every named place has a positive land area",
+      "tier": 2,
+      "status": "pass",
+      "claim": "The name and area lookups describe the same set of places at every geography level, and every published land area is greater than zero.",
+      "method": "For each level the published name lookup and area lookup are read and their key sets compared in both directions. Land areas are then checked for values of zero or below.",
+      "interpretation": "These files are joined by identifier downstream: a consumer computing population density reads a count from a partition, a label from the name lookup, and a denominator from the area lookup. A place present in one and absent from the other therefore breaks silently at the join \u2014 a named place with no area yields no density, and an area with no name is a row nobody can label. A land area of zero is worse than missing, because it divides rather than drops: it produces an infinite density that will propagate through whatever is computed from it.",
+      "metrics": [
+        {
+          "label": "Geography levels compared",
+          "value": 7,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Named places",
+          "value": 39727,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Places with a published area",
+          "value": 39727,
+          "unit": "",
+          "expected": 39727
+        },
+        {
+          "label": "Named places with no area",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        },
+        {
+          "label": "Areas with no name",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        },
+        {
+          "label": "Land areas of zero or below",
+          "value": 0,
+          "unit": "",
+          "expected": 0
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Name and area lookups compared, by geography level",
+          "columns": [
+            "Geography",
+            "Named places",
+            "Places with an area",
+            "Named, no area",
+            "Area, no name",
+            "Land area $\\leq 0$"
+          ],
+          "rows": [
+            [
+              "cbsa",
+              925,
+              925,
+              0,
+              0,
+              0
+            ],
+            [
+              "county",
+              3144,
+              3144,
+              0,
+              0,
+              0
+            ],
+            [
+              "czone2020",
+              588,
+              588,
+              0,
+              0,
+              0
+            ],
+            [
+              "nation",
+              1,
+              1,
+              0,
+              0,
+              0
+            ],
+            [
+              "puma",
+              2462,
+              2462,
+              0,
+              0,
+              0
+            ],
+            [
+              "state",
+              51,
+              51,
+              0,
+              0,
+              0
+            ],
+            [
+              "zcta",
+              32556,
+              32556,
+              0,
+              0,
+              0
+            ]
+          ],
+          "align": "lrrrrr",
+          "note": null,
+          "numeric_columns": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "label": "tab:b1-areas"
+        }
+      ],
+      "figures": [],
+      "sql": [],
+      "skipped_because": null,
+      "runtime_s": 3.4476930839999795,
+      "error": null
+    },
+    {
+      "id": "B2",
+      "section": "B",
+      "title": "Land area totals are plausible and agree across geography levels",
+      "tier": 2,
+      "status": "pass",
+      "claim": "Every geography level that tiles the country reports the same total land area, and that total is within one percent of the figure the Census Bureau publishes for the fifty states and the District of Columbia.",
+      "method": "Published land areas are summed per level. Levels the registry marks as complete-coverage are compared against each other and against the Census figure; partial-coverage levels are reported but excluded from the comparison, since they are not expected to reach it.",
+      "interpretation": "Agreement between levels is stronger evidence than the magnitude check. County, PUMA and state areas are read from three separately published TIGER layers and commuting zones are summed from counties, so a level that disagrees points at a specific artifact rather than at a systematic error. The Census total is a magnitude check only: TIGER revises per-polygon areas between vintages and does not reproduce the published figure exactly, so the tolerance is set to pass a boundary revision while failing a unit error or a dropped state. Partial-coverage levels fall short by construction --- metropolitan areas do not cover rural land, and ZIP Code Tabulation Areas leave gaps over unpopulated terrain.",
+      "metrics": [
+        {
+          "label": "Complete-coverage levels compared",
+          "value": 5,
+          "unit": "",
+          "expected": null
+        },
+        {
+          "label": "Distinct land-area totals among them",
+          "value": 1,
+          "unit": "",
+          "expected": 1
+        },
+        {
+          "label": "Land area reported",
+          "value": 9151638,
+          "unit": "km2",
+          "expected": null
+        },
+        {
+          "label": "Census published figure",
+          "value": 9147593,
+          "unit": "km2",
+          "expected": null
+        },
+        {
+          "label": "Deviation",
+          "value": 0.044,
+          "unit": "%",
+          "expected": null
+        },
+        {
+          "label": "Tolerance",
+          "value": 1.0,
+          "unit": "%",
+          "expected": null
+        }
+      ],
+      "tables": [
+        {
+          "caption": "Published land and water area by geography level",
+          "columns": [
+            "Geography",
+            "Coverage",
+            "Places",
+            "Land (km\\textsuperscript{2})",
+            "Water (km\\textsuperscript{2})",
+            "Share of US land (\\%)"
+          ],
+          "rows": [
+            [
+              "cbsa",
+              "partial",
+              925,
+              4456916.67589,
+              324880.40088,
+              48.72228875825586
+            ],
+            [
+              "county",
+              "complete",
+              3144,
+              9151638.078979,
+              697526.683079,
+              100.04422014598815
+            ],
+            [
+              "czone2020",
+              "complete",
+              588,
+              9151638.078979,
+              697526.683079,
+              100.04422014598815
+            ],
+            [
+              "nation",
+              "complete",
+              1,
+              9151638.078979,
+              697526.683079,
+              100.04422014598815
+            ],
+            [
+              "puma",
+              "complete",
+              2462,
+              9151638.078979,
+              697526.683079,
+              100.04422014598815
+            ],
+            [
+              "state",
+              "complete",
+              51,
+              9151638.078979,
+              697526.683079,
+              100.04422014598815
+            ],
+            [
+              "zcta",
+              "partial",
+              32556,
+              7302864.370823,
+              170202.363296,
+              79.83372643298624
+            ]
+          ],
+          "align": "llrrrr",
+          "note": "Areas are TIGER's own ALAND and AWATER attributes, not measurements of the simplified geometry this site serves for the map. Measuring the simplified shapes would give areas for polygons nobody treats as authoritative and would disagree with every other source quoting the Census figure.",
+          "numeric_columns": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "label": "tab:b2-land-area"
+        }
+      ],
+      "figures": [],
+      "sql": [],
+      "skipped_because": null,
+      "runtime_s": 0.8542984100000695,
       "error": null
     },
     {
@@ -1904,7 +2172,7 @@
         "WITH src AS (\n            SELECT grid_lon, grid_lat, sum(n_noise) AS pop\n            FROM read_parquet('<source file>') GROUP BY 1, 2\n        )\n        SELECT count(*)                                        AS cells,\n               sum(src.pop)                                    AS pop,\n               count(*) FILTER (WHERE x.geo_id IS NULL)        AS cells_missing,\n               coalesce(sum(src.pop) FILTER (WHERE x.geo_id IS NULL), 0) AS pop_missing\n        FROM src LEFT JOIN read_parquet('<crosswalk>') x USING (grid_lon, grid_lat)"
       ],
       "skipped_because": null,
-      "runtime_s": 36.766495770999995,
+      "runtime_s": 40.43825985199999,
       "error": null
     },
     {
@@ -2005,7 +2273,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 3.4917695820000176,
+      "runtime_s": 6.854737345999979,
       "error": null
     },
     {
@@ -2111,7 +2379,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 0.7122535850000418,
+      "runtime_s": 0.9747342429999435,
       "error": null
     },
     {
@@ -2189,7 +2457,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 1.5132822420000025,
+      "runtime_s": 1.572984482000038,
       "error": null
     },
     {
@@ -2276,7 +2544,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 0.9187106770000355,
+      "runtime_s": 0.9877536320000218,
       "error": null
     },
     {
@@ -2501,7 +2769,7 @@
       ],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 27.961778167999967,
+      "runtime_s": 29.29195210900002,
       "error": null
     },
     {
@@ -2549,7 +2817,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 27.389993008000033,
+      "runtime_s": 28.94996693799999,
       "error": null
     },
     {
@@ -2603,7 +2871,7 @@
       "figures": [],
       "sql": [],
       "skipped_because": null,
-      "runtime_s": 0.872218308000015,
+      "runtime_s": 1.0989753940000355,
       "error": null
     }
   ]
